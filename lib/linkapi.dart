@@ -12,3 +12,13 @@ const String linkLogIn="$linkServerName/login.php";
 const String linkRiskEvaluator =
     "$linkServerName/risk_evaluator.php";
 //127.0.0.1
+
+String getBaseUrl() {
+  if (kIsWeb) {
+    return 'http://127.0.0.1'; // Web
+  } else if (Platform.isAndroid) {
+    return 'http://10.0.2.2'; // Android emulator
+  } else {
+    return 'http://127.0.0.1'; // iOS or desktop
+  }
+}
