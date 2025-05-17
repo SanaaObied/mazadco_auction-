@@ -1,3 +1,6 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 const String linkServerName = "http://10.0.2.2/user_profile";
 const String linkGetItem = "$linkServerName/get_items.php";
 const String linkGetItemFavorite = "$linkServerName/getFavorites.php";
