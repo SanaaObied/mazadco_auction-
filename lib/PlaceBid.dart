@@ -11,6 +11,8 @@ import 'package:works/user_profile.dart';
 import 'package:works/visa.dart';
 
 import 'NotificationHelper.dart';
+import 'category_get.dart';
+import 'linkapi.dart';
 class AuctionItemScreen extends StatefulWidget {
   final int itemId;
   final int userId;
@@ -40,6 +42,8 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
 
   String? _selectedPaymentMethod;
   double? _userBid;
+  int? _riskLevel;
+  String? userLevel;
 
   // void _updateVisaDetails(String cardNumber, String expiryDate, String cvv) {
   //   setState(() {
@@ -53,13 +57,28 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
   void initState() {
     super.initState();
     _auctionItem = fetchAuctionItem(widget.itemId);
-    Session.userId = widget.userId;
+
+    // تحميل مستوى المخاطرة
+    fetchRiskLevel(widget.userId)
+        .then((level) {
+      print('✔️ Risk Level: $level'); // ✅ هنا تطبع المستوى
+
+      setState(() {
+        userLevel = level;
+      });
+
+      // بإمكانك استدعاء دوال تعتمد على مستوى المخاطرة هنا
+      // مثل: fetchAuctionItemsBasedOnRiskLevel();
+    })
+        .catchError((e) {
+      print('Error fetching risk level: $e');
+    });    Session.userId = widget.userId;
   }
 
   Future<AuctionItem> fetchAuctionItem(int itemId) async {
     final response = await http.post(
       Uri.parse(
-        'http://10.0.2.2/user_profile/iteam_deaiteld_from_dp.php',
+        '${getBaseUrl()}/user_profile/iteam_deaiteld_from_dp.php',
       ),
       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
       body: {'item_id': itemId.toString()},
@@ -123,88 +142,61 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    List<String> paymentMethods = ['Cash on delivery', 'Credit Card', 'PayPal'];
+
+    bool isPaymentMethodAllowed(String? level, String method) {
+      if (level == null) return false;
+
+      final l = level.toLowerCase();
+
+      if (l == 'low') {
+        return true; // كل الطرق متاحة
+      } else if (l == 'medium' || l == 'high' || l == 'new user') {
+        return method == 'Visa' || method == 'Apple Pay';
+      } else {
+        return false;
+      }
+    }
+
+    var _selectedIndex = 0;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 171, 105, 105),
+        backgroundColor: Colors.teal,
         elevation: 0,
         title: GestureDetector(
-          onTap: () {
-          /*  Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomePage()),
-            );*/
-          },
-          child: Image.network('../android/images/icon.png', height: 50),
+          onTap: () {},
+          child:  SizedBox(
+            height: 50,
+            child: buildImage('images/icon.png'),
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.menu, color: Colors.black),
 
-          onPressed: () {
-           // Navigator.push(
-            //  context,
-            //  MaterialPageRoute(builder: (context) => user_profile()),
-           // );
-          },
+          onPressed: () {},
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Colors.black),
+            icon: Icon(Icons.search, color: Colors.white),
             onPressed: () {
-             // Navigator.push(
-                //context,
-              //  MaterialPageRoute(builder: (context) => search2()),
-             // );
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => search2(userId: Session.userId!),
+                ),
+              );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.add, color: Colors.black), // Icon for 'sell'
-            onPressed: () {
-              // Handle sell action
-            },
 
-            // //   onPressed: () {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => FavoritePage()),
-            //   );
-            // },
-          ),
           IconButton(
-            icon: Icon(Icons.help_outline, color: Colors.black),
+            icon: Icon(Icons.login, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ContactUsPage()),
+                MaterialPageRoute(builder: (context) => CategoryFilterPage(userId:widget.userId)),
               );
             },
-          ),
-          IconButton(
-            icon: Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {
-             // Navigator.push(
-               //// context,
-             //   MaterialPageRoute(builder: (context) => Favorite()),
-              //);
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.category, color: Colors.black),
-            onPressed: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => FavoritePage()),
-              // );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.login, color: Colors.black), onPressed: () {  },
-           /* onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LoginPage()),
-              );
-            },*/
           ),
         ],
       ),
@@ -224,6 +216,12 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
 
             AuctionItem item = snapshot.data!;
 
+            final List<String> paymentMethods = [
+              'Visa',
+              'PayPal',
+              'Apple Pay',
+              'Cash on delivery',
+            ];
             return Center(
               child: SizedBox(
                 width: 800,
@@ -244,7 +242,11 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Image.network(item.imageUrl, height: 150),
+                         SizedBox(
+
+                              height: 150,
+                              child: buildImage(item.imageUrl),
+                            ),
                             SizedBox(height: 10),
                             Text(
                               item.title,
@@ -316,23 +318,62 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                             DropdownButtonFormField<String>(
                               value: _selectedPaymentMethod,
                               items:
-                                  [
-                                        'Visa',
-                                        'PayPal',
-                                        'Apple Pay',
-                                        'Cashe on delivery ',
-                                      ]
-                                      .map(
-                                        (method) => DropdownMenuItem(
-                                          value: method,
-                                          child: Text(method),
-                                        ),
-                                      )
-                                      .toList(),
+                              paymentMethods.map((method) {
+                                bool isDisabled = false;
+
+                                if (userLevel != null) {
+                                  final level = userLevel!.toLowerCase();
+
+                                  if (level == 'medium' ||
+                                      level == 'new user') {
+                                    // visa and applepay
+                                    if (method == 'PayPal' ||
+                                        method == 'Cash on delivery') {
+                                      isDisabled = true;
+                                    }
+                                  } else if (level == 'high') {
+                                    // only visa foe high risk
+                                    if (method != 'Visa') {
+                                      isDisabled = true;
+                                    }
+                                  }
+                                  //all low level payment is allowed
+                                }
+
+                                return DropdownMenuItem<String>(
+                                  value: isDisabled ? null : method,
+                                  enabled: !isDisabled,
+                                  child: Text(
+                                    method,
+                                    style: TextStyle(
+                                      color:
+                                      isDisabled
+                                          ? Colors.grey
+                                          : Colors.black,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                               onChanged: (value) {
-                                setState(() {
-                                  _selectedPaymentMethod = value;
-                                });
+                                if (value != null) {
+                                  if (isPaymentMethodAllowed(
+                                    userLevel,
+                                    value,
+                                  )) {
+                                    setState(() {
+                                      _selectedPaymentMethod = value;
+                                    });
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Payment method "$value" is not allowed for your risk level.',
+                                        ),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
                               },
                               decoration: InputDecoration(
                                 labelText: 'Choose Payment Method',
@@ -542,7 +583,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                                     double currentPrice = _userBid ?? item.price;
 
                                     final response = await http.post(
-                                      Uri.parse('http://10.0.2.2/user_profile/placed_Bid.php'),
+                                      Uri.parse('${getBaseUrl()}/user_profile/placed_Bid.php'),
                                       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                                       body: {
                                         'item_id': item.itemId.toString(),   // 🔁 استبدل بمعرف العنصر الصحيح
@@ -613,6 +654,82 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
           },
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.teal,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white,
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+
+          // الانتقال إلى الصفحة المناسبة
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ContactUsPage()),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => Favorite(
+                  userId:
+                  Session
+                      .userId!, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
+                ),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CategoryFilterPage(userId:widget.userId)),
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'Contact Us',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorite',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
+        ],
+      ),
     );
+  }
+
+  Future<String> fetchRiskLevel(int userId) async {
+    final uri = Uri.parse(
+      linkGetRiskLevel,
+    ).replace(queryParameters: {'user_id': userId.toString()});
+
+    final response = await http.get(uri);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+
+      if (data['status'] == 'success') {
+        if (data.containsKey('risk_level')) {
+          return data['risk_level'].toString(); // رجّع كـ String
+        } else {
+          throw Exception('Risk level not found in response');
+        }
+      } else {
+        throw Exception('Error from server: ${data['message']}');
+      }
+    } else {
+      throw Exception(
+        'Failed to fetch risk level (status ${response.statusCode})',
+      );
+    }
   }
 }
