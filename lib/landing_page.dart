@@ -3,8 +3,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:works/Favorite.dart';
 import 'package:works/contactus.dart';
-import 'package:works/main.dart';
-import 'package:works/search.dart';
+import 'package:works/linkapi.dart';
+
 import 'package:works/search2.dart';
 import 'package:works/user_profile.dart';
 
@@ -12,6 +12,7 @@ import 'addAuction.dart';
 import 'category_get.dart';
 import 'item_deatailed_from_dp.dart';
 
+// orgin
 // session.dart
 class Session {
   static int? userId;
@@ -59,53 +60,126 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   List<AuctionItem> auctionItems = [];
   String selectedCategory = 'All';
-
+  String riskLevel = 'low';
   @override
   void initState() {
     super.initState();
-    Session.userId = widget.ipAddress; // ✅ Correct way to access instance variable
+    Session.userId =
+        widget.ipAddress; // ✅ Correct way to access instance variable
+
     fetchAuctionItems();
+    fetchUserRiskLevel();
+
     print("IP Address: ${widget.ipAddress}"); // طباعة ال IP للتأكد
   }
 
-  // Fetch auction items from API
-  Future<void> fetchAuctionItems() async {
+  Future<void> fetchUserRiskLevel() async {
+    // final response = await http.get(
+    //   Uri.parse(
+    //     'http://localhost/works/user_profile/get_risk_level.php?user_id=${widget.ipAddress}',
+    //   ),
+    // );
     final response = await http.get(
-      Uri.parse('http://10.0.2.2/user_profile/item_from_db.php'),
+      Uri.parse("$linkGetRiskLevel?user_id=${widget.ipAddress}"),
     );
+    print('Response body: ${response.body}');
 
     if (response.statusCode == 200) {
-      List<dynamic> data = json.decode(response.body);
+      final data = json.decode(response.body);
 
-      // print("Response Data: $data");
-
-      setState(() {
-        auctionItems =
-            data.map((item) {
-              return AuctionItem(
-                imageUrl: item['image_url'] ?? '',
-                price:
-                    item['price'] is double
-                        ? item['price']
-                        : double.tryParse(item['price'].toString()) ?? 0.0,
-                title: item['title'] ?? 'No Title',
-                description: item['description'] ?? 'No Description',
-                startTime: item['start_time'] ?? '',
-                endTime: item['end_time'] ?? '',
-                location: item['location'] ?? '',
-                sellerName: item['seller_name'] ?? 'Unknown Seller',
-                itemId:
-                    item['item_id'] is int
-                        ? item['item_id']
-                        : int.tryParse(item['item_id'].toString()) ?? 0,
-                status: item['status'] ?? 'Unknown',
-                category: item['category'] ?? 'Uncategorized',
-              );
-            }).toList();
-      });
+      if (data['status'] == 'success') {
+        if (data.containsKey('risk_level')) {
+          if (!mounted) return; // ✅ تحقق قبل استخدام setState
+          setState(() {
+            riskLevel = data['risk_level'] ?? 'low';
+          });
+          fetchAuctionItems(); // لا تحتاج setState فيها، بس تأكد فيها أيضاً
+        } else {
+          _showErrorDialog('Risk level not found in response');
+        }
+      } else {
+        _showErrorDialog('Error: ${data['message']}');
+      }
     } else {
-      _showErrorDialog('Failed to load auction items');
+      _showErrorDialog('Failed to load user risk level');
     }
+  }
+
+  Future<void> fetchAuctionItems() async {
+    final response = await http.get(
+      Uri.parse(
+        '${getBaseUrl()}/user_profile/item_from_db.php?user_id=${widget.ipAddress}',
+      ),
+    );
+
+    if (response.statusCode != 200) {
+      if (!mounted) return;
+      _showErrorDialog('فشل في تحميل عناصر المزاد');
+      return;
+    }
+
+    final List<dynamic> data = json.decode(response.body);
+    if (data.isEmpty) {
+      if (!mounted) return;
+      _showErrorDialog('لم يتم العثور على عناصر المزاد في الاستجابة');
+      return;
+    }
+
+    // استخراج الأسعار وتحويلها لقائمة double
+    List<double> prices =
+    data
+        .map((item) => double.tryParse(item['price'].toString()) ?? 0.0)
+        .toList();
+
+    // ترتيب الأسعار تصاعديًا
+    prices.sort();
+
+    // حساب المئينات 33% و 66%
+    double p33 = getPercentile(prices, 33);
+    double p66 = getPercentile(prices, 66);
+
+    // تحديد الحد الأقصى للسعر حسب مستوى المخاطرة
+    double priceLimit;
+    switch (riskLevel) {
+      case 'high':
+        priceLimit = p33;
+        break;
+      case 'medium':
+        priceLimit = p66;
+        break;
+      case 'low':
+        priceLimit = double.infinity;
+        break;
+      default:
+        priceLimit = p66;
+    }
+
+    if (!mounted) return; // ✅ تحقق قبل setState
+
+    setState(() {
+      auctionItems =
+          data
+              .map((item) {
+            double price = double.tryParse(item['price'].toString()) ?? 0.0;
+            if (price > priceLimit) return null;
+
+            return AuctionItem(
+              imageUrl: item['image_url'] ?? '',
+              price: price,
+              title: item['title'] ?? 'No Title',
+              description: item['description'] ?? 'No Description',
+              startTime: item['start_time'] ?? '',
+              endTime: item['end_time'] ?? '',
+              location: item['location'] ?? '',
+              sellerName: item['seller_name'] ?? 'Unknown Seller',
+              itemId: int.tryParse(item['item_id'].toString()) ?? 0,
+              status: item['status'] ?? 'Unknown',
+              category: item['category'] ?? 'Uncategorized',
+            );
+          })
+              .whereType<AuctionItem>()
+              .toList();
+    });
   }
 
   // Show error dialog
@@ -141,6 +215,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    int _selectedIndex = 0;
     return Scaffold(
       backgroundColor: Colors.teal[50], // لون الخلفية العام
       appBar: AppBar(
@@ -150,7 +225,10 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             setState(() {});
           },
-          child: Image.asset('../android/images/icon.png', height: 50),
+          child:  SizedBox(
+            height: 50,
+            child: buildImage('images/icon.png'),
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
@@ -161,8 +239,10 @@ class _HomePageState extends State<HomePage> {
               MaterialPageRoute(
                 builder:
                     (context) => UserProfile(
-                        userId: widget.ipAddress // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
-                    ),
+                  userId:
+                  widget
+                      .ipAddress, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
+                ),
               ),
             );
           },
@@ -174,46 +254,19 @@ class _HomePageState extends State<HomePage> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => search2(userId:widget.ipAddress)),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => NewProductScreen()),
+                MaterialPageRoute(
+                  builder: (context) => search2(userId: widget.ipAddress),
+                ),
               );
             },
           ),
 
           IconButton(
-            icon: Icon(Icons.help_outline, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ContactUsPage()),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.favorite_border, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => Favorite(
-                  userId: widget.ipAddress, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
-                ),
-                ),);
-            },
-          ),
-          IconButton(
             icon: Icon(Icons.login, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => CategoryFilterPage()),
+                MaterialPageRoute(builder: (context) => CategoryFilterPage(userId: widget.ipAddress)),
               );
             },
           ),
@@ -222,34 +275,34 @@ class _HomePageState extends State<HomePage> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            Image.asset("../android/images/welcome.png"),
             const SizedBox(height: 20),
             const Text(
               "Shop with us",
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
+
             const SizedBox(height: 20),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
                 children:
-                    categories
-                        .map(
-                          (category) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                            ),
-                            child: CategoryItem(
-                              category: category,
-                              onCategorySelected: (selected) {
-                                setState(() {
-                                  selectedCategory = selected;
-                                });
-                              },
-                            ),
-                          ),
-                        )
-                        .toList(),
+                categories
+                    .map(
+                      (category) => Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8.0,
+                    ),
+                    child: CategoryItem(
+                      category: category,
+                      onCategorySelected: (selected) {
+                        setState(() {
+                          selectedCategory = selected;
+                        });
+                      },
+                    ),
+                  ),
+                )
+                    .toList(),
               ),
             ),
             AuctionGrid(auctionItems: getFilteredItems()),
@@ -267,14 +320,120 @@ class _HomePageState extends State<HomePage> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  Image.asset("../android/images/icon.png", height: 100),
-                ],
+                  buildImage // 👈 Use it here
+                    ("images/icon.png"),                ],
               ),
             ),
           ],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => NewProductScreen()),
+          );
+        },
+        child: Icon(Icons.add),
+        backgroundColor: Colors.teal,
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.teal,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white,
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+
+          // الانتقال إلى الصفحة المناسبة
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ContactUsPage()),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => Favorite(
+                  userId:
+                  widget
+                      .ipAddress, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
+                ),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CategoryFilterPage(userId: widget.ipAddress)),
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'Contact Us',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorite',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
+        ],
+      ),
     );
+  }
+// bottomNavigationBar: BottomNavigationBar(
+//   backgroundColor: Colors.teal,
+//   selectedItemColor: Colors.white,
+//   unselectedItemColor: Colors.white,
+//   items: const [
+//     BottomNavigationBarItem(icon: Icon(Icons.add), label: 'add Auction'),
+//     BottomNavigationBarItem(
+//       icon: Icon(Icons.favorite),
+
+//       label: 'Favorite',
+//     ),
+//     BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+//   ],
+// ),
+}
+
+double getMaxBidAmount(String riskLevel, double totalSum) {
+  final third = totalSum / 3;
+
+  switch (riskLevel) {
+    case 'high':
+      return third;
+    case 'medium':
+      return third * 2;
+    case 'low':
+      return double.infinity;
+    default:
+      return third * 2;
+  }
+}
+
+/// دالة لحساب المئين من قائمة مرتبة
+double getPercentile(List<double> sortedList, int percentile) {
+  if (sortedList.isEmpty) return 0.0;
+
+  double rank = (percentile / 100) * (sortedList.length - 1);
+  int lowerIndex = rank.floor();
+  int upperIndex = rank.ceil();
+
+  if (lowerIndex == upperIndex) {
+    return sortedList[lowerIndex];
+  } else {
+    double weight = rank - lowerIndex;
+    return sortedList[lowerIndex] * (1 - weight) +
+        sortedList[upperIndex] * weight;
   }
 }
 
@@ -301,6 +460,7 @@ class AuctionGrid extends StatelessWidget {
     );
   }
 }
+
 class AuctionCard extends StatelessWidget {
   final AuctionItem item;
   const AuctionCard({super.key, required this.item});
@@ -309,11 +469,22 @@ class AuctionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        final double maxBid = item.price * 0.6;
+
+        print('🔹 itemId: ${item.itemId}');
+        print('🔹 userId: ${Session.userId}');
+        print('🔹 Max allowed bid: €${maxBid.toStringAsFixed(2)}');
+
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => AuctionItemScreen_(itemId: item.itemId,userId: Session.userId!),
-            //userId:widget.ipAddress
+            builder:
+                (context) => AuctionItemScreen_(
+              itemId: item.itemId,
+              userId: Session.userId!,
+              //  maxBidAllowed:
+              // maxBid, // أضف هذا في حال كنت تستخدمه داخل الشاشة التالية
+            ),
           ),
         );
       },
@@ -324,30 +495,11 @@ class AuctionCard extends StatelessWidget {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
-                child: Image.network(
-                  item.imageUrl,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+                child: SizedBox(
                   width: 350,
-                  height: 50,
-                  fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) {
-                      return child;
-                    } else {
-                      return Center(
-                        child: CircularProgressIndicator(
-                          value:
-                          loadingProgress.expectedTotalBytes != null
-                              ? loadingProgress.cumulativeBytesLoaded /
-                              (loadingProgress.expectedTotalBytes ?? 1)
-                              : null,
-                        ),
-                      );
-                    }
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Icon(Icons.error);
-                  },
+                  height: 150,
+                  child: buildImage(item.imageUrl),
                 ),
               ),
             ),
@@ -355,7 +507,7 @@ class AuctionCard extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 item.title,
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
             ),
@@ -363,7 +515,7 @@ class AuctionCard extends StatelessWidget {
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 '€${item.price}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -372,6 +524,7 @@ class AuctionCard extends StatelessWidget {
     );
   }
 }
+
 class CategoryItem extends StatelessWidget {
   final Category category;
   final Function(String) onCategorySelected;
@@ -391,13 +544,11 @@ class CategoryItem extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         child: Column(
           children: [
-            Image.asset(
-              category.image,
-              width: 100,
-              height: 100,
-              fit: BoxFit.cover,
-            ),
-            Padding(
+            SizedBox(
+              height: 80,
+              width: 80,
+              child: buildImage(category.image),
+            ),            Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 category.name,
@@ -413,6 +564,7 @@ class CategoryItem extends StatelessWidget {
     );
   }
 }
+
 class AuctionItem {
   final String imageUrl;
   final double price;
@@ -448,10 +600,10 @@ class Category {
 }
 
 final List<Category> categories = [
-  Category(name: "Jewelry", image: "../android/images/Jewelry.jpg"),
-  Category(name: "Shirts", image: "../android/images/Shirts.jpg"),
-  Category(name: "Sofas", image: "../android/images/sofa.png"),
-  Category(name: "Books", image: "../android/images/Book.png"),
-  Category(name: "Cups", image: "../android/images/cup.png"),
-  Category(name: "Toys", image: "../android/images/toys.jpg"),
+  Category(name: "Jewelry", image: "images/Jewelry.jpg"),
+  Category(name: "Shirts", image: "images/Shirts.jpg"),
+  Category(name: "Sofas", image: "images/sofa.png"),
+  Category(name: "Books", image: "images/Book.png"),
+  Category(name: "Cups", image: "images/cup.png"),
+  Category(name: "Toys", image: "images/toys.jpg"),
 ];
