@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:googleapis/classroom/v1.dart';
 import 'package:http/http.dart' as http;
+import 'package:works/category_get.dart';
+import 'package:works/linkapi.dart';
 import 'package:works/search.dart';
 import 'package:works/search2.dart';
- import 'dart:convert';
+import 'dart:convert';
 import 'addAuction.dart';
 import 'contactus.dart';
 import 'user_profile.dart';
@@ -59,8 +61,12 @@ class AuctionItem {
 
 class AuctionItemScreen_ extends StatefulWidget {
   final int itemId;
- final int userId;
-  const AuctionItemScreen_({super.key, required this.itemId, required this.userId});
+  final int userId;
+  const AuctionItemScreen_({
+    super.key,
+    required this.itemId,
+    required this.userId,
+  });
 
   @override
   _AuctionItemScreenState createState() => _AuctionItemScreenState();
@@ -72,15 +78,19 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
   @override
   void initState() {
     super.initState();
-    Session.userId=widget.userId;
+    Session.userId = widget.userId;
     _auctionItem = fetchAuctionItem(widget.itemId);
   }
 
   Future<AuctionItem> fetchAuctionItem(int itemId) async {
+    // final response = await http.post(
+    //   Uri.parse(
+    //     'http://localhost/works/user_profile/iteam_deaiteld_from_dp.php',
+    //   ),
+    //   body: {'item_id': itemId.toString()},
+    // );
     final response = await http.post(
-      Uri.parse(
-        'http://10.0.2.2/user_profile/iteam_deaiteld_from_dp.php',
-      ),
+      Uri.parse(linkItemDetails),
       body: {'item_id': itemId.toString()},
     );
 
@@ -96,93 +106,56 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
 
   @override
   Widget build(BuildContext context) {
+    var _selectedIndex = 0;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.teal,
         elevation: 0,
         title: GestureDetector(
           onTap: () {
-           /* Navigator.pushReplacement(
+            /* Navigator.pushReplacement(
               context,
               MaterialPageRoute(builder: (context) => HomePage()),
             );*/
           },
-          child: Image.network('../android/images/icon.png', height: 50),
+          child:
+          SizedBox(
+            height: 50,
+            child: buildImage('images/icon.png'),
+          ),
         ),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.menu, color: Colors.black),
 
           onPressed: () {
-           // Navigator.push(
-           //   context,
-             // MaterialPageRoute(
-               // builder: (context) => user_profile(),
-             // ),
-           // );
+            // Navigator.push(
+            //   context,
+            // MaterialPageRoute(
+            // builder: (context) => user_profile(),
+            // ),
+            // );
           },
         ),
         actions: [
           IconButton(
-            icon: Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-             // Navigator.push(
-             //   context,
-              //  MaterialPageRoute(builder: (context) => search2()),
-            //  );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.add, color: Colors.black), // Icon for 'sell'
-            onPressed: () {
-              // Handle sell action
-            },
-
-            // //   onPressed: () {
-            //   Navigator.push(
-            //     context,
-            //     MaterialPageRoute(builder: (context) => FavoritePage()),
-            //   );
-            // },
-          ),
-          IconButton(
-            icon: Icon(Icons.help_outline, color: Colors.black),
+            icon: Icon(Icons.search, color: Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
-               // MaterialPageRoute(builder: (context) => ContactUsPage()),
-                MaterialPageRoute(builder: (context) => NewProductScreen()),
-
+                MaterialPageRoute(
+                  builder: (context) => search2(userId: Session.userId!),
+                ),
               );
             },
           ),
-          IconButton(
-            icon: Icon(Icons.favorite_border, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                //MaterialPageRoute(builder: (context) => Favorite()),
-                  MaterialPageRoute(builder: (context) => NewProductScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.category, color: Colors.black),
-            onPressed: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => FavoritePage()),
-              // );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.login, color: Colors.black),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => NewProductScreen()),
 
-                //  MaterialPageRoute(builder: (context) => LoginPage()),
+          IconButton(
+            icon: Icon(Icons.login, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => CategoryFilterPage(userId: widget.userId)),
               );
             },
           ),
@@ -224,7 +197,10 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Image.network(item.imageUrl, height: 150),
+               SizedBox(
+                height: 150,
+                child: buildImage(item.imageUrl),
+              ),
                   SizedBox(height: 10),
                   Text(
                     item.title,
@@ -274,16 +250,18 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) =>
-                                AuctionItemScreen(itemId: item.itemId, userId: widget.userId),
+                            builder:
+                                (context) => AuctionItemScreen(
+                              itemId: item.itemId,
+                              userId: widget.userId,
+                            ),
                           ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("User ID is not set!"))
+                          SnackBar(content: Text("User ID is not set!")),
                         );
                       }
-
                     },
                     child: Text('View Auction Item '),
                   ),
@@ -306,6 +284,56 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
             ),
           );
         },
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: Colors.teal,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white,
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+
+          // الانتقال إلى الصفحة المناسبة
+          if (index == 0) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => ContactUsPage()),
+            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => Favorite(
+                  userId:
+                  Session
+                      .userId!, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
+                ),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CategoryFilterPage(userId: widget.userId)),
+            );
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.help_outline),
+            label: 'Contact Us',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorite',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
+        ],
       ),
     );
   }
