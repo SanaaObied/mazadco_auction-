@@ -733,3 +733,4 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
     }
   }
 }
+
