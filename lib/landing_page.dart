@@ -8,9 +8,11 @@ import 'package:works/linkapi.dart';
 import 'package:works/search2.dart';
 import 'package:works/user_profile.dart';
 
+import 'UserItemsScreen.dart';
 import 'addAuction.dart';
 import 'category_get.dart';
 import 'item_deatailed_from_dp.dart';
+import 'main.dart';
 
 // orgin
 // session.dart
@@ -233,16 +235,22 @@ class _HomePageState extends State<HomePage> {
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.menu, color: Colors.white),
+
           onPressed: () {
+            if (Session.userId == null || Session.userId == 0) {
+              // إذا لم يكن المستخدم مسجل الدخول، توجه إلى صفحة تسجيل الدخول
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => LoginPage()),
+              );
+              return;
+            }
+
+            // إذا كان مسجل الدخول، توجه إلى صفحة الملف الشخصي
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder:
-                    (context) => UserProfile(
-                  userId:
-                  widget
-                      .ipAddress, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
-                ),
+                builder: (context) => UserProfile(userId: widget.ipAddress),
               ),
             );
           },
@@ -327,26 +335,43 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton:
+      Session.userId != 0
+          ? FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => NewProductScreen()),
+            MaterialPageRoute(
+              builder:
+                  (context) =>
+                  UserParticipationPage(userId: Session.userId!),
+            ),
           );
         },
-        child: Icon(Icons.add),
+        child: Icon(Icons.add_shopping_cart),
         backgroundColor: Colors.teal,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.teal,
-        selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.white,
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+        tooltip: 'My Participated Items',
+      )
+          : null,
 
+      bottomNavigationBar: BottomNavigationBar(
+      backgroundColor: Colors.teal,
+      selectedItemColor: Colors.white,
+      unselectedItemColor: Colors.white,
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+
+        if (Session.userId == null || Session.userId == 0) {
+          // المستخدم غير مسجل الدخول → توجهه لصفحة تسجيل الدخول
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => LoginPage()),
+          );
+          return;
+        }
           // الانتقال إلى الصفحة المناسبة
           if (index == 0) {
             Navigator.push(
