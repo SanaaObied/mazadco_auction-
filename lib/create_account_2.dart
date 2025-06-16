@@ -7,7 +7,6 @@ class UserCredentialsForm extends StatefulWidget {
   final String phone;
   final String address;
   final String date;
-  final String accountType;
   final String payment_way;
 
   const UserCredentialsForm({
@@ -16,7 +15,6 @@ class UserCredentialsForm extends StatefulWidget {
     required this.phone,
     required this.address,
     required this.date,
-    required this.accountType,
     required this.payment_way,
     super.key,
   });
@@ -78,25 +76,19 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                   topRight: Radius.circular(100),
                 ),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  SizedBox(height: 8),
-                  Text(
-                    "Create New Account",
-                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 6),
-                ],
+              child: const Center(
+                child: Text(
+                  "Create New Account",
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
               ),
             ),
             const SizedBox(height: 20),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: Form(
-                // إضافة الـ Form هنا
-                key: _formKey, // ربط الـ Form بالـ GlobalKey
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -190,16 +182,15 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                                     MaterialPageRoute(
                                       builder:
                                           (context) => UserInfoPage(
-                                            username: _usernameController.text,
-                                            password: _passwordController.text,
-                                            name: widget.name,
-                                            email: widget.email,
-                                            phone: widget.phone,
-                                            address: widget.address,
-                                            date: widget.date,
-                                            accountType: widget.accountType,
-                                            status: widget.payment_way,
-                                          ),
+                                        username: _usernameController.text,
+                                        password: _passwordController.text,
+                                        name: widget.name,
+                                        email: widget.email,
+                                        phone: widget.phone,
+                                        address: widget.address,
+                                        date: widget.date,
+                                        status: widget.payment_way,
+                                      ),
                                     ),
                                   );
                                 }
