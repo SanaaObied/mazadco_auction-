@@ -246,7 +246,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
                   SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {
-                      if (Session.userId != null) {
+                      if (Session.userId != null && Session.userId != 0) {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -258,12 +258,14 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
                           ),
                         );
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("User ID is not set!")),
+                        // إعادة التوجيه إلى صفحة تسجيل الدخول
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => LoginPage()),
                         );
                       }
                     },
-                    child: Text('View Auction Item '),
+                    child: Text('View Auction Item'),
                   ),
 
                   SizedBox(height: 10),
