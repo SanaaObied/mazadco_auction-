@@ -316,8 +316,8 @@ class _LoginPageState extends State<LoginPage> {
 
                         const SizedBox(height: 20),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             TextButton(
                               onPressed: () {
@@ -331,7 +331,7 @@ class _LoginPageState extends State<LoginPage> {
                               },
                               child: const Text(
                                 'Create Account',
-                                style: TextStyle(color: Color(0xff0077b6)),
+                                style: TextStyle(color: Colors.teal),
                               ),
                             ),
                             TextButton(
@@ -340,19 +340,17 @@ class _LoginPageState extends State<LoginPage> {
                                   context,
                                   MaterialPageRoute(
                                     builder:
-                                        (context) => MazadcoApp(
-                                      ipAddress: Session.userId!,
-                                    ),
+                                        (context) => MazadcoApp(ipAddress: 0),
                                   ),
                                 );
                               },
                               child: const Text(
-                                'Loading Data',
+                                'landing page',
                                 style: TextStyle(color: Colors.grey),
                               ),
                             ),
                           ],
-                        ),
+                        )
                       ],
                     ),
                   ),
