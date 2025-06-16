@@ -16,7 +16,6 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
   final TextEditingController _addressController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
 
-  String _accountType = 'buyer';
   String? _status2 = '';
 
   @override
@@ -44,10 +43,10 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
   }) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: Color(0xFF708090)), // Slate Gray
+      labelStyle: const TextStyle(color: Color(0xFF708090)),
       prefixIcon: Icon(icon, color: Colors.teal),
       filled: true,
-      fillColor: Color(0xFFE0F2F1), // Light Teal
+      fillColor: Color(0xFFE0F2F1),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
@@ -64,10 +63,10 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 164, 217, 202),
       appBar: AppBar(
-        toolbarHeight: 130, // تحديد ارتفاع الـ AppBar
-        backgroundColor: Colors.transparent, // لجعل الخلفية شفافة
-        elevation: 0, // لإزالة الظل من الـ AppBar
-        automaticallyImplyLeading: true, // إظهار زر الرجوع
+        toolbarHeight: 130,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: true,
         flexibleSpace: Container(
           height: 130,
           width: double.infinity,
@@ -89,26 +88,25 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
               ),
               SizedBox(height: 6),
             ],
+            ),
           ),
         ),
-      ),
-
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.teal.withOpacity(0.2),
-                  blurRadius: 15,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+        body: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.95),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+              BoxShadow(
+              color: Colors.teal.withOpacity(0.2),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+            ],
             ),
             child: Form(
               key: _formKey,
@@ -122,9 +120,9 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                     ),
                     validator:
                         (value) =>
-                            value == null || value.isEmpty
-                                ? 'Enter your name'
-                                : null,
+                    value == null || value.isEmpty
+                        ? 'Enter your name'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -136,9 +134,9 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                     keyboardType: TextInputType.emailAddress,
                     validator:
                         (value) =>
-                            value == null || value.isEmpty
-                                ? 'Enter a valid email'
-                                : null,
+                    value == null || value.isEmpty
+                        ? 'Enter a valid email'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -150,29 +148,9 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                     keyboardType: TextInputType.phone,
                     validator:
                         (value) =>
-                            value == null || value.length != 10
-                                ? 'Enter a valid phone number'
-                                : null,
-                  ),
-                  const SizedBox(height: 16),
-                  DropdownButtonFormField<String>(
-                    value: _accountType,
-                    decoration: buildInputDecoration(
-                      label: 'Account Type',
-                      icon: Icons.person_pin,
-                    ),
-                    items:
-                        ['buyer', 'seller', 'admin']
-                            .map(
-                              (type) => DropdownMenuItem(
-                                value: type,
-                                child: Text(type),
-                              ),
-                            )
-                            .toList(),
-                    onChanged: (value) {
-                      if (value != null) setState(() => _accountType = value);
-                    },
+                    value == null || value.length != 10
+                        ? 'Enter a valid phone number'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -191,20 +169,20 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                       icon: Icons.payment,
                     ),
                     items:
-                        ['Visa', 'PayPal', 'Apple Pay', 'Cash on delivery']
-                            .map(
-                              (method) => DropdownMenuItem(
-                                value: method,
-                                child: Text(method),
-                              ),
-                            )
-                            .toList(),
+                    ['Visa', 'PayPal', 'Apple Pay', 'Cash on delivery']
+                        .map(
+                          (method) => DropdownMenuItem(
+                        value: method,
+                        child: Text(method),
+                      ),
+                    )
+                        .toList(),
                     onChanged: (value) => setState(() => _status2 = value),
                     validator:
                         (value) =>
-                            value == null || value.isEmpty
-                                ? 'Please select a payment method'
-                                : null,
+                    value == null || value.isEmpty
+                        ? 'Please select a payment method'
+                        : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -215,9 +193,9 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                     ),
                     validator:
                         (value) =>
-                            value == null || value.isEmpty
-                                ? 'Enter your address'
-                                : null,
+                    value == null || value.isEmpty
+                        ? 'Enter your address'
+                        : null,
                   ),
                   const SizedBox(height: 30),
                   SizedBox(
@@ -231,14 +209,13 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                             MaterialPageRoute(
                               builder:
                                   (context) => UserCredentialsForm(
-                                    name: _nameController.text,
-                                    email: _emailController.text,
-                                    phone: _phoneController.text,
-                                    address: _addressController.text,
-                                    date: _dateController.text,
-                                    accountType: _accountType,
-                                    payment_way: _status2 ?? '',
-                                  ),
+                                name: _nameController.text,
+                                email: _emailController.text,
+                                phone: _phoneController.text,
+                                address: _addressController.text,
+                                date: _dateController.text,
+                                payment_way: _status2 ?? '',
+                              ),
                             ),
                           );
                         }
@@ -263,7 +240,7 @@ class _UserRegistrationFormState extends State<UserRegistrationForm> {
                   const SizedBox(height: 10),
                   const Text(
                     '* All fields are required',
-                    style: TextStyle(color: Color(0xFFFF7F50)), // Coral warning
+                    style: TextStyle(color: Color(0xFFFF7F50)),
                   ),
                 ],
               ),
