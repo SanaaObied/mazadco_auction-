@@ -6,7 +6,15 @@ const String linkGetItem = "$linkServerName/get_items.php";
 const String linkGetItemFavorite = "$linkServerName/getFavorites.php";
 const String linkUserProfile = "$linkServerName/getUser_Profile.php";
 const String linkSearch2 = "$linkServerName/search2.php";
-
+ final  String linkItemDetails = "$linkServerName/iteam_deaiteld_from_dp.php";
+final String linkAddProduct = "$linkServerName/add-product.php";
+final String linktsamn = "$linkServerName/tsamn.php";
+final String getAuctions = "$linkServerName/get_auctions.php";
+final String getRecent = "$linkServerName/get-recent.php";
+final String getData = "$linkServerName/get_data.php";
+final String delete = "$linkServerName/delete.php";
+final String linkSaveUser = "$linkServerName/save_user.php";
+final String linkCart = "$linkServerName/user_participation.php";
 //getUser_Profile
 const String linkgetPassword = "$linkServerName/getPassword.php";
 const String linkupdatePassword = "$linkServerName/updatePassword.php";
@@ -25,3 +33,17 @@ String getBaseUrl() {
     return 'http://127.0.0.1'; // iOS or desktop
   }
 }
+Widget buildImage(String? imagePath) {
+  if (imagePath == null || imagePath.isEmpty) {
+    return Image.asset("images/default1.png", fit: BoxFit.cover);
+  }
+
+  // If it's already a full URL (web or backend-generated), use it
+  if (imagePath.startsWith("http")) {
+    return Image.network(
+      imagePath,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) =>
+          Image.asset("images/default3.png", fit: BoxFit.cover),
+    );
+  }
