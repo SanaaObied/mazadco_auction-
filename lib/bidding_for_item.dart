@@ -35,8 +35,8 @@ class _MaxBidDialogState extends State<MaxBidDialog> {
     if (bidAmount < minRequired) {
       setState(
         () =>
-            _errorMessage =
-                '⚠️ The amount must be at least ${minRequired.toStringAsFixed(2)} €.',
+        _errorMessage = '⚠️ The amount must be at least \$${minRequired.toStringAsFixed(2)}.'
+
       );
       return;
     }
@@ -56,7 +56,7 @@ class _MaxBidDialogState extends State<MaxBidDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // عرض السعر الحالي
-          Text('Current price: ${widget.currentPrice.toStringAsFixed(2)} €'),
+          Text('Current price: \$${widget.currentPrice.toStringAsFixed(2)}'),
           TextField(
             controller: _controller,
             keyboardType: TextInputType.number,
@@ -104,7 +104,7 @@ class BidDialog extends StatelessWidget {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Current Price: €$currentPrice'),
+          Text('Current Price: \$$currentPrice'),
           SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -119,7 +119,7 @@ class BidDialog extends StatelessWidget {
                   }
                   _selectBid(context, currentPrice + increment);
                 },
-                child: Text('€${currentPrice + (currentPrice < 100 ? 5 : 30)}'),
+                child: Text('\$${currentPrice + (currentPrice < 100 ? 5 : 30)}'),
               ),
               ElevatedButton(
                 onPressed: () {
@@ -132,7 +132,7 @@ class BidDialog extends StatelessWidget {
                   _selectBid(context, currentPrice + increment);
                 },
                 child: Text(
-                  '€${currentPrice + (currentPrice < 100 ? 10 : 40)}',
+                  '\$${currentPrice + (currentPrice < 100 ? 10 : 40)}',
                 ),
               ),
               ElevatedButton(
@@ -146,7 +146,7 @@ class BidDialog extends StatelessWidget {
                   _selectBid(context, currentPrice + increment);
                 },
                 child: Text(
-                  '€${currentPrice + (currentPrice < 100 ? 15 : 50)}',
+                    '\$${currentPrice + (currentPrice < 100 ? 15 : 50)}'
                 ),
               ),
             ],

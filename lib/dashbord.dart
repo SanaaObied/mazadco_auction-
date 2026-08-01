@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'ItemDetailsPage.dart';
+import 'landing_page.dart' show Session;
+import 'linkapi.dart';
+import 'user_table.dart';
 
 class AdminDashboard2 extends StatefulWidget {
-  const AdminDashboard2({super.key});
+  final int userId;
+
+  const AdminDashboard2({super.key, required this.userId});
 
   @override
   State<AdminDashboard2> createState() => _AdminDashboardState();
@@ -22,13 +28,7 @@ class _AdminDashboardState extends State<AdminDashboard2> {
     });
 
     try {
-      final uri = Uri.parse('http://10.0.2.2/user_profile/get-recent.php');
-      debugPrint('Fetching from: $uri');
-
-      final response = await http.get(uri).timeout(const Duration(seconds: 10));
-
-      debugPrint('Response status: ${response.statusCode}');
-      debugPrint('Response body: ${response.body}');
+      final response = await http.get(Uri.parse(getRecent)).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body) as Map<String, dynamic>;
@@ -46,9 +46,9 @@ class _AdminDashboardState extends State<AdminDashboard2> {
         errorMessage = e.toString();
         isLoading = false;
       });
-      debugPrint('Error fetching data: $e');
     }
   }
+
 
   @override
   void initState() {
@@ -57,74 +57,137 @@ class _AdminDashboardState extends State<AdminDashboard2> {
   }
 
   Widget _buildDataTable(List<Map<String, dynamic>> data, String title) {
-    if (data.isEmpty) {
-      return Text('No $title found', style: const TextStyle(color: Colors.grey));
-    }
+    return Card(
+      elevation: 5,
+      margin: const EdgeInsets.symmetric(vertical: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.teal,
+              ),
+            ),
+            const Divider(thickness: 1.5),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowColor: MaterialStateProperty.all(Colors.teal.shade50),
+                dataRowColor: MaterialStateProperty.all(Colors.white),
+                border: TableBorder.all(color: Colors.grey.shade300),
+                columns: data.isNotEmpty
+                    ? [
+                  ...data.first.keys.map((key) => DataColumn(label: Text(key.toString()))),
+                  const DataColumn(label: Text('Action')),
+                ]
+                    : [],
+                rows: data.map((item) {
+                  return DataRow(
+                    cells: [
+                      ...item.values.map((value) => DataCell(Text(value?.toString() ?? 'N/A'))),
+                      DataCell(
+                        ElevatedButton.icon(
+                          icon: const Icon(Icons.visibility, size: 16),
+                          label: const Text('Show'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.tealAccent,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          ),
+                          onPressed: () {
+                            if (title == 'Recent Auctions') {
+                              final itemId = item['item_id'];
+                              if (itemId != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ItemDetailsPage(itemId: int.parse(itemId.toString())),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('auction doesnt exist')),
+                                );
+                              }
+                            } else if (title == 'Recent Users') {
+                              final userId = item['id'];
+                              if (userId != null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => UserProfilePage(userId: int.parse(userId.toString())),
+                                  ),
+                                );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('user doesnt work')),
+                                );
+                              }
+                            }
+                          },
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            columns: data.first.keys.map((key) =>
-              DataColumn(label: Text(key.toString()))
-            ).toList(),
-            rows: data.map((item) =>
-              DataRow(
-                cells: item.values.map((value) =>
-                  DataCell(Text(value?.toString() ?? 'N/A'))
-                ).toList()
-              )
-            ).toList(),
-          ),
+
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
-        title: const Text('Recent Activity'),
+        title: const Text('Admin Dashboard'),
+        backgroundColor: Colors.teal.shade700,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: fetchRecentActivities,
+            tooltip: 'Refresh Data',
           ),
         ],
       ),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: Colors.blue))
           : errorMessage != null
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('Error: $errorMessage', style: const TextStyle(color: Colors.red)),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: fetchRecentActivities,
-                        child: const Text('Retry'),
-                      ),
-                    ],
-                  ),
-                )
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildDataTable(recentAuctions, 'Recent Auctions'),
-                      const SizedBox(height: 20),
-                      _buildDataTable(recentUsers, 'Recent Users'),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
-                ),
+          ? Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Error: $errorMessage', style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: fetchRecentActivities,
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      )
+          : SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDataTable(recentAuctions, 'Recent Auctions'),
+            _buildDataTable(recentUsers, 'Recent Users'),
+          ],
+        ),
+      ),
     );
   }
 }

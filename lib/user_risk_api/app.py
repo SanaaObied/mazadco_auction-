@@ -1,78 +1,114 @@
 from flask import Flask, request, jsonify
 import joblib
-import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 import threading
 import logging
-import os
-import mysql.connector  # الاتصال بقاعدة البيانات
+import mysql.connector
+import traceback  # لإظهار الخطأ كاملًا
 
 app = Flask(__name__)
 
 model_path = 'model/risk_model.pkl'
 
-# Initialize logger
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Load model
-model = joblib.load(model_path)
-logger.info("Model loaded successfully.")
+try:
+    model = joblib.load(model_path)
+    logger.info("Model loaded successfully.")
+except Exception as e:
+    logger.error("Failed to load model", exc_info=True)
+    model = None
 
-# Thread lock for safe reading and writing
 lock = threading.Lock()
 
-@app.route('/predict-risk', methods=['GET', 'POST'])
+@app.route('/predict-risk', methods=['POST'])
 def predict_risk():
     logger.info("Received prediction request.")
     try:
         data = request.get_json()
+        logger.info(f"Input data: {data}")
 
-        features = pd.DataFrame([{
+        input_row = {
             'account_authenticity': data.get('account_authenticity', 0),
             'bidding_score': data.get('bidding_score', 0),
             'transaction_score': data.get('transaction_score', 0),
-            'delivery_score': data.get('delivery_score', 0),
             'fraud_reports': data.get('fraud_reports', 0)
-        }])
+        }
 
-        prediction = model.predict(features)[0]
+        features = pd.DataFrame([input_row])
+        logger.info(f"Constructed features DataFrame:\n{features}")
+
+        if model is None:
+            logger.error("Model is not loaded.")
+            return jsonify({'error': 'Model is not loaded'}), 500
+
+        try:
+            prediction = model.predict(features)[0]
+        except Exception as e:
+            logger.exception("Prediction failed")
+            return jsonify({'error': f'Prediction failed: {str(e)}'}), 500
+
         risk_map = {0: 'Low', 1: 'Medium', 2: 'High'}
         result = risk_map.get(prediction, 'Unknown')
 
-        logger.info(f"Received data: {data}")
         logger.info(f"Prediction result: {result}")
 
-        new_row = pd.DataFrame([{
-            'account_authenticity': data.get('account_authenticity', 0),
-            'bidding_score': data.get('bidding_score', 0),
-            'transaction_score': data.get('transaction_score', 0),
-            'delivery_score': data.get('delivery_score', 0),
-            'fraud_reports': data.get('fraud_reports', 0),
-            'risk_level': result
-        }])
-
-        file_path = 'data/user_behavior.csv'
+        input_row['risk_level'] = result
 
         with lock:
-            try:
-                existing_df = pd.read_csv(file_path)
-                duplicate = ((existing_df == new_row.iloc[0]).all(axis=1)).any()
-            except FileNotFoundError:
-                duplicate = False
+            conn = mysql.connector.connect(
+                host='localhost',
+                user='root',
+                password='',
+                database='final'
+            )
+            cursor = conn.cursor()
 
-            if not duplicate:
-                new_row.to_csv(file_path, mode='a', index=False, header=not os.path.exists(file_path))
-                logger.info("New data appended to the CSV file.")
+            check_query = """
+                SELECT COUNT(*) FROM dataset_new
+                WHERE account_authenticity = %s AND bidding_score = %s AND
+                      transaction_score = %s AND fraud_reports = %s
+            """
+            cursor.execute(check_query, (
+                input_row['account_authenticity'],
+                input_row['bidding_score'],
+                input_row['transaction_score'],
+                input_row['fraud_reports']
+            ))
+            (count,) = cursor.fetchone()
+
+            if count == 0:
+                insert_query = """
+                    INSERT INTO dataset_new (
+                        account_authenticity, bidding_score, transaction_score,
+                        fraud_reports, risk_level
+                    )
+                    VALUES (%s, %s, %s, %s, %s)
+                """
+                cursor.execute(insert_query, (
+                    input_row['account_authenticity'],
+                    input_row['bidding_score'],
+                    input_row['transaction_score'],
+                    input_row['fraud_reports'],
+                    input_row['risk_level']
+                ))
+                conn.commit()
+                logger.info("New data inserted into database.")
             else:
-                logger.info("Duplicate data detected. Skipping write operation.")
+                logger.info("Duplicate data detected. Skipping insert.")
+
+            cursor.close()
+            conn.close()
 
         return jsonify({'risk_level': result})
 
     except Exception as e:
-        logger.error(f"Error in prediction: {str(e)}")
-        return jsonify({'error': 'Failed to process prediction'}), 500
+        logger.error("Unhandled exception in /predict-risk endpoint")
+        traceback_str = traceback.format_exc()
+        logger.error(traceback_str)
+        return jsonify({'error': 'Failed to process prediction', 'details': str(e), 'trace': traceback_str}), 500
 
 
 @app.route('/retrain', methods=['POST'])
@@ -80,7 +116,6 @@ def retrain():
     global model
     try:
         with lock:
-            # الاتصال بقاعدة البيانات
             conn = mysql.connector.connect(
                 host='localhost',
                 user='root',
@@ -89,25 +124,25 @@ def retrain():
             )
             cursor = conn.cursor(dictionary=True)
 
-            # جلب البيانات من الجدول
             cursor.execute("""
                 SELECT account_authenticity, bidding_score, transaction_score,
-                    delivery_score, fraud_reports, risk_level
+                       fraud_reports, risk_level
                 FROM dataset_new
             """)
             rows = cursor.fetchall()
 
             if not rows:
-                return jsonify({'error': 'لا توجد بيانات متاحة في قاعدة البيانات'}), 400
+                return jsonify({'error': 'No data available in database'}), 400
 
             df = pd.DataFrame(rows)
 
             required_columns = ['account_authenticity', 'bidding_score', 'transaction_score',
-                                'delivery_score', 'fraud_reports', 'risk_level']
+                                'fraud_reports', 'risk_level']
             if not all(col in df.columns for col in required_columns):
-                return jsonify({'error': 'Missing required columns in the database table'}), 400
+                return jsonify({'error': 'Missing required columns in database table'}), 400
 
-            X = df[['account_authenticity', 'bidding_score', 'transaction_score', 'delivery_score', 'fraud_reports']]
+            X = df[['account_authenticity', 'bidding_score', 'transaction_score',
+                    'fraud_reports']]
             y = df['risk_level'].map({'Low': 0, 'Medium': 1, 'High': 2})
 
             model = RandomForestClassifier(n_estimators=100, random_state=42)
@@ -118,10 +153,11 @@ def retrain():
             cursor.close()
             conn.close()
 
-            return jsonify({'message': '✅ Model retrained successfully using data from database.'})
+            logger.info("Model retrained and saved successfully.")
+            return jsonify({'message': 'Model retrained successfully using data from database.'})
 
     except Exception as e:
-        logger.error(f"Error during retraining: {str(e)}")
+        logger.exception("Retraining failed")
         return jsonify({'error': f"Failed to retrain the model: {str(e)}"}), 500
 
 

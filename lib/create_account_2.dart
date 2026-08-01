@@ -27,14 +27,39 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordconfController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   final _formKey = GlobalKey<FormState>();
+
+  String? _validateUsername(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Please enter a username';
+    }
+    if (value.length < 4) {
+      return 'Username must be at least 4 characters';
+    }
+    if (!RegExp(r'^[a-zA-Z0-9]+$').hasMatch(value)) {
+      return 'Only letters and numbers are allowed';
+    }
+    if (value.toLowerCase() == "admin") {
+      return 'This username is reserved';
+    }
+    return null;
+  }
 
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) {
       return 'Please enter a password';
-    } else if (value.length < 6) {
-      return 'Password must be at least 6 characters long';
+    }
+    if (value.length < 6) {
+      return 'must be at least 6 characters';
+    }
+    if (!RegExp(r'[A-Z]').hasMatch(value)) {
+      return 'must include at least one uppercase letter';
+    }
+    if (!RegExp(r'[a-z]').hasMatch(value)) {
+      return 'must include at least one lowercase letter';
+    }
+    if (!RegExp(r'[0-9]').hasMatch(value)) {
+      return 'must include at least one number';
     }
     return null;
   }
@@ -44,16 +69,6 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
       return 'Please confirm your password';
     } else if (value != _passwordController.text) {
       return 'Passwords do not match';
-    }
-    return null;
-  }
-
-  String? _validateUsername(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'Please enter a username';
-    }
-    if (value == "admin") {
-      return 'This username is reserved';
     }
     return null;
   }
@@ -76,11 +91,14 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                   topRight: Radius.circular(100),
                 ),
               ),
-              child: const Center(
-                child: Text(
-                  "Create New Account",
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
+              child: const Padding(
+                padding: EdgeInsets.only(top: 40),
+                child: Center(
+                  child: Text(
+                    "Create New Account",
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),
@@ -106,12 +124,7 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                             decoration: InputDecoration(
                               hintText: "Username",
                               filled: true,
-                              fillColor: const Color.fromARGB(
-                                255,
-                                244,
-                                255,
-                                254,
-                              ),
+                              fillColor: const Color.fromARGB(255, 244, 255, 254),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 18,
@@ -130,12 +143,7 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                             decoration: InputDecoration(
                               hintText: "Password",
                               filled: true,
-                              fillColor: const Color.fromARGB(
-                                255,
-                                193,
-                                214,
-                                211,
-                              ),
+                              fillColor: const Color.fromARGB(255, 193, 214, 211),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 18,
@@ -154,12 +162,7 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                             decoration: InputDecoration(
                               hintText: "Confirm Password",
                               filled: true,
-                              fillColor: const Color.fromARGB(
-                                255,
-                                232,
-                                254,
-                                251,
-                              ),
+                              fillColor: const Color.fromARGB(255, 232, 254, 251),
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 24,
                                 vertical: 18,
@@ -180,8 +183,7 @@ class _UserCredentialsFormState extends State<UserCredentialsForm> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder:
-                                          (context) => UserInfoPage(
+                                      builder: (context) => UserInfoPage(
                                         username: _usernameController.text,
                                         password: _passwordController.text,
                                         name: widget.name,

@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:googleapis/classroom/v1.dart';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:works/category_get.dart';
 import 'package:works/linkapi.dart';
-import 'package:works/search.dart';
+import 'package:works/main.dart';
 import 'package:works/search2.dart';
-import 'dart:convert';
 import 'addAuction.dart';
-import 'contactus.dart';
+import 'chat.dart';
 import 'user_profile.dart';
 import 'Favorite.dart';
 import 'PlaceBid.dart';
-import 'main.dart';
-import 'package:works/user_profile.dart';
 
 class Session {
   static int? userId;
@@ -29,6 +26,7 @@ class AuctionItem {
   final String endTime;
   final String location;
   final String sellerName;
+  final String category;
 
   AuctionItem({
     required this.itemId,
@@ -41,11 +39,13 @@ class AuctionItem {
     required this.endTime,
     required this.location,
     required this.sellerName,
+    required this.category,
+
   });
 
   factory AuctionItem.fromJson(Map<String, dynamic> json) {
     return AuctionItem(
-      itemId: int.tryParse(json['item_id'].toString()) ?? 0, //
+      itemId: int.tryParse(json['item_id'].toString()) ?? 0,
       title: json['title'] ?? 'No Title',
       description: json['description'] ?? 'No Description',
       price: double.tryParse(json['price'].toString()) ?? 0.0,
@@ -54,10 +54,10 @@ class AuctionItem {
       startTime: json['start_time'] ?? '',
       endTime: json['end_time'] ?? '',
       location: json['location'] ?? '',
-      sellerName: json['saller_name'] ?? '',
+      sellerName: json['saller_name'] ?? 'Unknown Seller',
+      category: json['category'] ?? 'Uncategorized', // ✅ أضف هذا السطر
     );
-  }
-}
+  }}
 
 class AuctionItemScreen_ extends StatefulWidget {
   final int itemId;
@@ -74,6 +74,7 @@ class AuctionItemScreen_ extends StatefulWidget {
 
 class _AuctionItemScreenState extends State<AuctionItemScreen_> {
   late Future<AuctionItem> _auctionItem;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -83,12 +84,6 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
   }
 
   Future<AuctionItem> fetchAuctionItem(int itemId) async {
-    // final response = await http.post(
-    //   Uri.parse(
-    //     'http://localhost/works/user_profile/iteam_deaiteld_from_dp.php',
-    //   ),
-    //   body: {'item_id': itemId.toString()},
-    // );
     final response = await http.post(
       Uri.parse(linkItemDetails),
       body: {'item_id': itemId.toString()},
@@ -102,7 +97,6 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
     }
   }
 
-  // دالة لعرض نافذة المزايدة
 
   @override
   Widget build(BuildContext context) {
@@ -126,15 +120,9 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.black),
-
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            // Navigator.push(
-            //   context,
-            // MaterialPageRoute(
-            // builder: (context) => user_profile(),
-            // ),
-            // );
+            Navigator.pop(context);
           },
         ),
         actions: [
@@ -197,10 +185,10 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-               SizedBox(
-                height: 150,
-                child: buildImage(item.imageUrl),
-              ),
+                  SizedBox(
+                    height: 150,
+                    child: buildImage(item.imageUrl),
+                  ),
                   SizedBox(height: 10),
                   Text(
                     item.title,
@@ -238,7 +226,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      'Price Now: ${item.price} EUR',
+                      'Price Now: \$${item.price}',
                       style: TextStyle(color: Colors.white, fontSize: 18),
                       textAlign: TextAlign.center,
                     ),
@@ -265,7 +253,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
                         );
                       }
                     },
-                    child: Text('View Auction Item'),
+                    child: Text('Place a Bid'),
                   ),
 
                   SizedBox(height: 10),
@@ -301,7 +289,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
           if (index == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ContactUsPage()),
+              MaterialPageRoute(builder: (_) => ChatScreen(userId: Session.userId!,)),
             );
           } else if (index == 1) {
             Navigator.push(
@@ -324,8 +312,8 @@ class _AuctionItemScreenState extends State<AuctionItemScreen_> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: 'Contact Us',
+            icon: Icon(Icons.chat),
+            label: 'Chat Bot',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),

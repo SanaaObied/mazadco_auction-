@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
+import 'linkapi.dart';
+import 'main.dart';
+
 class EditAuctionPage extends StatefulWidget {
   final Map auction;
 
@@ -39,7 +42,7 @@ class _EditAuctionPageState extends State<EditAuctionPage> {
 
     final itemId = widget.auction['item_id']?.toString();
     final response = await http.post(
-      Uri.parse('http://10.0.2.2/user_profile/update.php'),
+      Uri.parse('${getBaseUrl()}/user_profile/update.php'),
       body: {
         'item_id': itemId ?? '',
         'title': titleController.text,

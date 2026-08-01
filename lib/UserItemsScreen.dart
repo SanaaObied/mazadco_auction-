@@ -61,6 +61,7 @@ class Bid {
 class UserParticipationPage extends StatefulWidget {
   final int userId;
 
+
   const UserParticipationPage({Key? key, required this.userId})
     : super(key: key);
 
@@ -71,6 +72,7 @@ class UserParticipationPage extends StatefulWidget {
 class _UserParticipationPageState extends State<UserParticipationPage> {
   List<Bid> userBids = [];
   bool isLoading = true;
+  final String cancelBid = '${getBaseUrl()}/user_profile/cancel_bid.php';
 
   @override
   void initState() {
@@ -141,6 +143,32 @@ class _UserParticipationPageState extends State<UserParticipationPage> {
     );
   }
 
+  Future<void> cancelBid2(int bidId) async {
+    final url = Uri.parse(cancelBid); // change URL to your local IP if needed
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({'bid_id': bidId}),
+      );
+
+      final jsonResponse = json.decode(response.body);
+      if (jsonResponse['status'] == 'success') {
+        setState(() {
+          userBids.removeWhere((bid) => bid.bidId == bidId);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Bid cancelled successfully")),
+        );
+
+      } else {
+        _showErrorDialog(jsonResponse['message']);
+      }
+    } catch (e) {
+      _showErrorDialog("حدث خطأ أثناء الإلغاء");
+    }
+  }
+
   final TableBorder tableBorder = TableBorder(
     horizontalInside: BorderSide(width: 1, color: Colors.black),
     verticalInside: BorderSide(width: 1, color: Colors.black),
@@ -177,14 +205,14 @@ class _UserParticipationPageState extends State<UserParticipationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("تفاصيل المزايدات"),
+        title: Text("Auction Details"),
         backgroundColor: Colors.teal,
       ),
       body:
           isLoading
               ? Center(child: CircularProgressIndicator())
               : userBids.isEmpty
-              ? Center(child: Text("لا توجد مزايدات."))
+              ? Center(child: Text("No bids available."))
               : Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: SingleChildScrollView(
@@ -214,6 +242,7 @@ class _UserParticipationPageState extends State<UserParticipationPage> {
                             buildTableCell("End Time", isHeader: true),
                             buildTableCell("Location", isHeader: true),
                             buildTableCell("Seller Name", isHeader: true),
+                            buildTableCell("Cancel", isHeader: true), // 👈 NEW COLUMN
                           ],
                         ),
                         ...userBids.asMap().entries.map((entry) {
@@ -318,7 +347,7 @@ class _UserParticipationPageState extends State<UserParticipationPage> {
                                   });
                                 },
                                 child: buildTableCell(
-                                  '€${bid.startingPrice.toStringAsFixed(2)}',
+                                  '\$${bid.startingPrice.toStringAsFixed(2)}',
                                   isHeader: false,
                                 ),
                               ),
@@ -403,6 +432,16 @@ class _UserParticipationPageState extends State<UserParticipationPage> {
                                   isHeader: false,
                                 ),
                               ),
+                              Container(
+                                alignment: Alignment.center,
+                                child: IconButton(
+                                  icon: Icon(Icons.cancel, color: Colors.red),
+                                  tooltip: 'إلغاء المزايدة',
+                                  onPressed: () => cancelBid2(bid.bidId), // ✅ Now correct inside row
+                                ),
+                              ),
+
+
                             ],
                           );
                         }).toList(),

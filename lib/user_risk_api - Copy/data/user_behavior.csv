@@ -1,0 +1,8 @@
+account_authenticity,bidding_score,transaction_score,delivery_score,fraud_reports,risk_level
+0.7,0.6,1,0,0,Medium
+0.7,0.6,1,0,3,High
+0.7,0.3,0.3,0,23,High
+0.7,0.3,0.3,0,24,High
+0.7,0.7,1,0,0,Medium
+0.7,0.8,1,0,0,Low
+0.7,0.8,1,0,2,Low

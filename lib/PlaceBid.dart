@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:works/Favorite.dart';
-import 'package:works/contactus.dart';
 import 'dart:convert';
 import 'package:works/item_deatailed_from_dp.dart';
 import 'package:works/bidding_for_item.dart';
@@ -12,6 +11,7 @@ import 'package:works/visa.dart';
 
 import 'NotificationHelper.dart';
 import 'category_get.dart';
+import 'chat.dart';
 import 'linkapi.dart';
 class AuctionItemScreen extends StatefulWidget {
   final int itemId;
@@ -151,7 +151,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
 
       if (l == 'low') {
         return true; // كل الطرق متاحة
-      } else if (l == 'medium' || l == 'high' || l == 'new user') {
+      } else if (l == 'medium' || l == 'high' || l == 'new_user') {
         return method == 'Visa' || method == 'Apple Pay';
       } else {
         return false;
@@ -171,11 +171,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
           ),
         ),
         centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.black),
 
-          onPressed: () {},
-        ),
         actions: [
           IconButton(
             icon: Icon(Icons.search, color: Colors.white),
@@ -189,15 +185,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
             },
           ),
 
-          IconButton(
-            icon: Icon(Icons.login, color: Colors.white),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => CategoryFilterPage(userId:widget.userId)),
-              );
-            },
-          ),
+
         ],
       ),
       body: Center(
@@ -219,7 +207,6 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
             final List<String> paymentMethods = [
               'Visa',
               'PayPal',
-              'Apple Pay',
               'Cash on delivery',
             ];
             return Center(
@@ -270,11 +257,118 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 10),
+                            SizedBox(width: 10),
+                            TextButton.icon(
+                              onPressed: () {
+                                showModalBottomSheet(
+                                  context: context,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.vertical(
+                                      top: Radius.circular(15),
+                                    ),
+                                  ),
+                                  builder: (BuildContext context) {
+                                    return Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            'Select a reason for reporting',
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          SizedBox(height: 15),
+                                          ListTile(
+                                            leading: Icon(
+                                              Icons.warning,
+                                              color: Colors.orange,
+                                            ),
+                                            title: Text('Fraud'),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _submitReport(
+                                                'Fraud',
+                                                item.sellerName,
+                                              );
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: Icon(
+                                              Icons.block,
+                                              color: Colors.red,
+                                            ),
+                                            title: Text(
+                                              'Abusive content',
+                                            ),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _submitReport(
+                                                'Fraud',
+                                                item.sellerName,
+                                              );
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: Icon(
+                                              Icons.error_outline,
+                                              color: Colors.blue,
+                                            ),
+                                            title: Text(
+                                              'Misleading information',
+                                            ),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _submitReport(
+                                                'Fraud',
+                                                item.sellerName,
+                                              );
+                                            },
+                                          ),
+                                          ListTile(
+                                            leading: Icon(
+                                              Icons.more_horiz,
+                                            ),
+                                            title: Text('Other'),
+                                            onTap: () {
+                                              Navigator.pop(context);
+                                              _submitReport(
+                                                'Fraud',
+                                                item.sellerName,
+                                              );
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                              icon: Icon(
+                                Icons.report,
+                                color: Colors.red,
+                                size: 18,
+                              ),
+                              label: Text(
+                                'Report',
+                                style: TextStyle(
+                                  color: Colors.red,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              style: TextButton.styleFrom(
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+
+
+                        SizedBox(height: 10),
                             Column(
                               children: [
                                 Text(
-                                  'Original Price: €${item.price}',
+                                  'Original Price: \$${item.price}',
                                   style: TextStyle(
                                     fontSize: 18,
                                     color: Colors.grey,
@@ -282,13 +376,13 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                                   ),
                                 ),
                                 Text(
-                                  'Current Price: €${_userBid ?? item.price}',
+                                  'Current Price: \$${_userBid ?? item.price}',
                                   style: TextStyle(
                                     fontSize: 18,
                                     color: Colors.redAccent,
                                     fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                                  ),),
+
                               ],
                             ),
                             SizedBox(height: 10),
@@ -325,7 +419,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                                   final level = userLevel!.toLowerCase();
 
                                   if (level == 'medium' ||
-                                      level == 'new user') {
+                                      level == 'new_user') {
                                     // visa and applepay
                                     if (method == 'PayPal' ||
                                         method == 'Cash on delivery') {
@@ -341,15 +435,15 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                                 }
 
                                 return DropdownMenuItem<String>(
-                                  value: isDisabled ? null : method,
-                                  enabled: !isDisabled,
-                                  child: Text(
-                                    method,
-                                    style: TextStyle(
-                                      color:
-                                      isDisabled
-                                          ? Colors.grey
-                                          : Colors.black,
+                                  value: method, // Always keep the value
+                                  enabled: !isDisabled, // Still shows as disabled
+                                  child: IgnorePointer( // Prevent interaction if disabled
+                                    ignoring: isDisabled,
+                                    child: Text(
+                                      method,
+                                      style: TextStyle(
+                                        color: isDisabled ? Colors.grey : Colors.black,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -539,98 +633,110 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
                               Text('CVV: ${_cvvController.text}'),
                             ],
 
-                            // ElevatedButton(
-                            //   onPressed: () {
-                            //     if (_formKey1.currentState?.validate() ??
-                            //         false) {
-                            //       ScaffoldMessenger.of(context).showSnackBar(
-                            //         SnackBar(
-                            //           content: Text(
-                            //             'All information is valid!',
-                            //           ),
-                            //         ),
-                            //       );
-                            //     } else {
-                            //       ScaffoldMessenger.of(context).showSnackBar(
-                            //         SnackBar(
-                            //           content: Text(
-                            //             'Please fill in all required fields',
-                            //           ),
-                            //         ),
-                            //       );
-                            //     }
-                            //   },
-                            //   style: ElevatedButton.styleFrom(
-                            //     backgroundColor: Colors.green,
-                            //     minimumSize: Size(160, 50),
-                            //   ),
-                            //   child: Text('Check Information'),
-                            // ),
                             ElevatedButton(
                               onPressed: () async {
-                                // التحقق من صحة رقم البطاقة باستخدام الكلاس VisaCardValidator
-                                bool isCardValid = VisaCardValidator.isValidCardNumber(
-                                  _cardNumberController.text,
-                                );
+                                if (_selectedPaymentMethod == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Please select a payment method first.'),
+                                      backgroundColor: Colors.orange,
+                                    ),
+                                  );
+                                  return;
+                                }
 
-                                if (isCardValid && _formKey1.currentState!.validate()) {
+                                bool isValid = false;
+
+                                if (_selectedPaymentMethod == 'Visa') {
+                                  bool isCardValid = VisaCardValidator.isValidCardNumber(_cardNumberController.text);
+
+                                  if (!isCardValid) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Invalid Visa card number.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  if (_formKey1.currentState?.validate() ?? false) {
+                                    isValid = true;
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Please fill all Visa card fields correctly.'),
+                                        backgroundColor: Colors.orange,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                } else if (_selectedPaymentMethod == 'PayPal') {
+                                  if (_paypalEmailController.text.isEmpty ||
+                                      !RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$')
+                                          .hasMatch(_paypalEmailController.text)) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Please enter a valid PayPal email.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  isValid = true;
+                                } else if (_selectedPaymentMethod == 'Apple Pay') {
+                                  if (_appleIdController.text.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Please enter your Apple ID.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                    return;
+                                  }
+                                  isValid = true;
+                                } else {
+                                  // For other payment methods like 'Cash on delivery', maybe no validation needed
+                                  isValid = true;
+                                }
+
+                                if (isValid) {
+                                  bool allowed = await checkAuctionPermission(widget.userId);
+                                  if (!allowed) return;
+
                                   setState(() {
-                                    _visaDetailsSubmitted = true;
+                                    _visaDetailsSubmitted = (_selectedPaymentMethod == 'Visa');
                                   });
 
                                   try {
-                                    // تأكد من وجود user_id
-                                    double currentPrice = _userBid ?? item.price;
+                                    double bidPrice = _userBid ?? item.price;
 
                                     final response = await http.post(
                                       Uri.parse('${getBaseUrl()}/user_profile/placed_Bid.php'),
                                       headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                                       body: {
-                                        'item_id': item.itemId.toString(),   // 🔁 استبدل بمعرف العنصر الصحيح
-                                        'user_id':widget.userId.toString(),
-                                         'price': currentPrice.toString(),// ✅ إضافة user_id إلى الطلب
+                                        'item_id': item.itemId.toString(),
+                                        'user_id': widget.userId.toString(),
+                                        'price': bidPrice.toString(),
+                                        'payment_method': _selectedPaymentMethod!,
+                                        // يمكن إرسال تفاصيل الدفع حسب الحاجة هنا
                                       },
                                     );
 
                                     final result = json.decode(response.body);
-                                    if (result['status'] == 'success') {
-                                      NotificationHelper.sendChatNotification(result['message']);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(result['message']),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
-                                    } else {
-                                      NotificationHelper.sendChatNotification(result['message']);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(result['message']),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
-                                    }
+                                    NotificationHelper.sendChatNotification(result['message']);
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(result['message']),
+                                        backgroundColor: (result['risk_level'] == 'success') ? Colors.green : Colors.red,
+                                      ),
+                                    );
                                   } catch (e) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text('❌ Network error: $e'),
                                         backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                } else {
-                                  if (!isCardValid) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Invalid card number. Please enter a valid Visa card number.'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Please fill in all required fields.'),
-                                        backgroundColor: Colors.orange,
                                       ),
                                     );
                                   }
@@ -668,7 +774,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
           if (index == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ContactUsPage()),
+              MaterialPageRoute(builder: (_) => ChatScreen(userId: widget.userId,)),
             );
           } else if (index == 1) {
             Navigator.push(
@@ -692,7 +798,7 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.help_outline),
-            label: 'Contact Us',
+            label: 'Chat Bot',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
@@ -705,6 +811,52 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
         ],
       ),
     );
+  }
+  Future<bool> checkAuctionPermission(int userId) async {
+    final url = Uri.parse("${getBaseUrl()}/user_profile/tsamn.php");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'user_id': userId.toString()},
+      );
+
+      print("📥 Status: ${response.statusCode}");
+      print("📦 Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        try {
+          final result = json.decode(response.body);
+
+          bool allowed = result['allowed'];
+          String message = result['message'];
+
+          if (!allowed) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(message), backgroundColor: Colors.red),
+            );
+          }
+
+          return allowed;
+        } catch (e) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("❌ JSON Decode error: $e"), backgroundColor: Colors.red),
+          );
+          return false;
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("❌ Server error (${response.statusCode})"), backgroundColor: Colors.red),
+        );
+        return false;
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("❌ Network error: $e"), backgroundColor: Colors.red),
+      );
+      return false;
+    }
   }
 
   Future<String> fetchRiskLevel(int userId) async {
@@ -732,5 +884,52 @@ class _AuctionItemScreenState extends State<AuctionItemScreen> {
       );
     }
   }
-}
 
+void _submitReport(String reason, String sellerUsername) async {
+  print("Reporting seller: $sellerUsername");
+
+  try {
+    var response = await http.post(
+      Uri.parse(reportUrl),
+      headers: {"Content-Type": "application/json"},
+      body: json.encode({'username': sellerUsername, 'reason': reason}),
+    );
+
+    print("Response status: ${response.statusCode}");
+    print("Response body: ${response.body}");
+
+    try {
+      var jsonResponse = json.decode(response.body);
+
+      String status = jsonResponse['status'] ?? 'error';
+      String message = jsonResponse['message'] ?? 'No message from server.';
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: status == 'success' ? Colors.green : Colors.red,
+        ),
+      );
+    } catch (e) {
+      print('JSON decode error: $e');
+      print('Response body: ${response.body}');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Invalid server response.${response.statusCode}  ${response.body}',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  } catch (e) {
+    print("Error submitting report: $e");
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Network error while reporting $sellerUsername.'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+}
+}

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'linkapi.dart';
+
 class SendMessagePage extends StatefulWidget {
   final String senderName;
   
@@ -26,7 +28,7 @@ class _SendMessagePageState extends State<SendMessagePage> {
     });
 
     try {
-      final url = Uri.parse('http://127.0.0.1/user_profile/get_users.php');
+      final url = Uri.parse('${getBaseUrl()}/user_profile/get_users.php');
       final response = await http.get(
         url,
         headers: {'Accept': 'application/json'},
@@ -60,7 +62,7 @@ class _SendMessagePageState extends State<SendMessagePage> {
     });
 
     try {
-      final url = Uri.parse('http://127.0.0.1/user_profile/send_msg.php');
+      final url = Uri.parse('${getBaseUrl()}/user_profile/send_msg.php');
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},

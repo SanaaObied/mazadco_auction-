@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'NotificationHelper.dart';
+import 'linkapi.dart';
+
 class user_status extends StatefulWidget {
 
 
@@ -23,7 +26,7 @@ class _UserInfoPageState extends State<user_status> {
   Future<void> fetchUsersWithStatus() async {
     try {
       final response = await http.get(Uri.parse(
-          'http://10.0.2.2/user_profile/user_status.php')); // Emulator-compatible localhost
+          '${getBaseUrl()}/user_profile/user_status.php')); // Emulator-compatible localhost
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -51,27 +54,54 @@ class _UserInfoPageState extends State<user_status> {
       });
     }
   }
+  Future<void> deleteUser(String username) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${getBaseUrl()}/user_profile/delete_user.php'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'username': username}),
+      );
+
+      final data = json.decode(response.body);
+      if (data['status'] == 'success') {
+        NotificationHelper.sendChatNotification(data['message']);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'])));
+        fetchUsersWithStatus(); // Refresh user list
+      } else {
+        NotificationHelper.sendChatNotification(data['message']);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'])));
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.red, // 🔴 Set background to red
+      backgroundColor: Colors.teal, // 🔴 Set background to red
       appBar: AppBar(
-        backgroundColor: Colors.red[900],
+        backgroundColor: Colors.white,
         title: const Text(
-          'Customer Status Report',
+          'User Risk Level Report',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.teal,
             fontWeight: FontWeight.bold,
-          ),
+          ),    textAlign: TextAlign.center,
+
         ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
+    child: Center(
+
+    child: Column(
+         // mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center, // ✅ Add this
+
           children: [
             const Text(
-              '\n\nWelcome to the Customer Status Page.\nBelow is a list of customers and their status:',
+              '\n\nWelcome to the Risk Level Page.\nBelow is a list of users and their Risk Level:',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.white, // ✅ Text style color
@@ -103,49 +133,43 @@ class _UserInfoPageState extends State<user_status> {
                       ),
                       headingRowHeight: 60,
                       dataRowHeight: 60,
-                      columnSpacing: 50,
+                      columnSpacing: 20,
                       border: TableBorder.all(
                         color: Colors.black, // Black border
                         width: 1,
                       ),
                       columns: const [
-                        DataColumn(
-                          label: Text(
-                            'Username',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          DataColumn(
+                            label: Text('User name', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           ),
-                        ),
-                        DataColumn(
-                          label: Text(
-                            'Status',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                          DataColumn(
+                            label: Text('Risk Level', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           ),
-                        ),
-                      ],
-                      rows: users.map(
-                            (user) => DataRow(
-                          cells: [
-                            DataCell(
-                              Container(
-                                width: 150,
-                                child: Text(
-                                  user['username'] ?? '',
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                              ),
+                          DataColumn(
+                            label: Text('Action', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                          ),
+                        ],
+
+                      rows: users.map((user) => DataRow(
+                        cells: [
+                          DataCell(Container(
+                            width: 100,
+                            child: Text(user['username'] ?? '', style: TextStyle(fontSize: 16)),
+                          )),
+                          DataCell(Container(
+                            width: 100,
+                            child: Text(user['risk_level'] ?? '', style: TextStyle(fontSize: 16)),
+                          )),
+                          DataCell(Container(
+                            child: IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => deleteUser(user['username']),
                             ),
-                            DataCell(
-                              Container(
-                                width: 60,
-                                child: Text(
-                                  user['status'] ?? '',
-                                  style: const TextStyle(fontSize: 16),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ).toList(),
+                          )
+                            ,)
+                        ],
+                      )).toList(),
+
                     ),
                   ),
                 ),
@@ -153,7 +177,7 @@ class _UserInfoPageState extends State<user_status> {
 
           ],
         ),
-      ),
+    )),
     );
   }
 }

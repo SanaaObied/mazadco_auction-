@@ -3,7 +3,15 @@ class Category {
   final String name;
   final String imageUrl;
 
+  // Main constructor with user_Id optional
   Category({
+    required this.id,
+    required this.name,
+    required this.imageUrl,
+  });
+
+  // Named constructor if you ever want to make user_Id required
+  Category.withUser({
     required this.id,
     required this.name,
     required this.imageUrl,
@@ -19,7 +27,7 @@ List<Category> categories = [
   Category(
     id: 2,
     name: 'Furniture',
-    imageUrl: 'images/furniture.png',
+    imageUrl: 'images/futniture.png',
   ),
   Category(
     id: 3,
@@ -29,12 +37,12 @@ List<Category> categories = [
   Category(
     id: 4,
     name: 'Home Appliances',
-    imageUrl: 'images/home_appliances.jfif',
+    imageUrl: 'images/Home_Appliances.jfif',
   ),
   Category(
     id: 5,
     name: 'Fashion',
-    imageUrl: 'images/fashion.jpg',
+    imageUrl: 'images/fashoin.jpg',
   ),
   Category(
     id: 6,
@@ -59,6 +67,6 @@ List<Category> categories = [
   Category(
     id: 10,
     name: 'Musical Instruments',
-    imageUrl: 'images/musical_instruments.png',
+    imageUrl: 'images/Musical_Instrument.png',
   ),
 ];

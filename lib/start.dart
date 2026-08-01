@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:works/item_deatailed_from_dp.dart';
+import 'package:works/main.dart';
 import 'package:works/user_status.dart';
 import 'addAuction.dart';
+import 'admin_profile.dart';
 import 'msg.dart';
 import 'admin.dart';
 import 'dashbord.dart';
-void main() {
-  runApp(const AdminDashboardApp());
-}
+import 'user_profile.dart';
 
 class AdminDashboardApp extends StatelessWidget {
-  const AdminDashboardApp({super.key});
+  final int ipAddress;
+  const AdminDashboardApp({super.key ,required this.ipAddress});
 
   @override
   Widget build(BuildContext context) {
+
     return MaterialApp(
       title: 'Auction Admin Dashboard',
       theme: ThemeData(
-        primarySwatch: Colors.deepPurple,
+       // primarySwatch: Colors.black,
         useMaterial3: true,
         appBarTheme: const AppBarTheme(
           centerTitle: true,
@@ -36,13 +39,14 @@ class AdminDashboardApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: const AdminDashboard(),
+      home:  AdminDashboard(ipAddress: ipAddress,),
     );
   }
 }
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({super.key});
+  final int ipAddress;
+  const AdminDashboard({super.key, required this.ipAddress});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();
@@ -52,12 +56,19 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _currentIndex = 0;
   bool _isExpanded = true;
 
-  final List<Widget> _pages = [
-    const DashboardHome(),
-    AdminAuctionsPage(),
-     user_status(),
-    SendMessagePage(senderName: 'Afnan'),
-  ];
+  late final List<Widget> _pages;
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      DashboardHome(ipAddress: widget.ipAddress),
+      AdminAuctionsPage(),
+      user_status(),
+      //SendMessagePage(senderName: 'Afnan'),
+      user_profile(userId: widget.ipAddress,),
+      NewProductScreen()
+    ];
+  }
 
   void _navigateTo(int index) {
     if (index >= _pages.length) {
@@ -82,16 +93,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
     
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.teal,
         title: const Text('Auction Admin Dashboard'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_circle),
-            onPressed: () {},
-          ),
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => LoginPage(
+
+                  ),
+                ),
+              );
+            },          ),
         ],
       ),
       body: isMobile ? _pages[_currentIndex] : _buildDesktopLayout(),
@@ -105,9 +122,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
         NavigationRail(
           minWidth: 70,
           extended: _isExpanded,
-          backgroundColor: Colors.deepPurple[50],
-          selectedIconTheme: const IconThemeData(color: Colors.deepPurple),
-          selectedLabelTextStyle: const TextStyle(color: Colors.deepPurple),
+          backgroundColor: Colors.teal[50],
+          selectedIconTheme: const IconThemeData(color: Colors.teal),
+          selectedLabelTextStyle: const TextStyle(color: Colors.teal),
           destinations: const [
             NavigationRailDestination(
               icon: Icon(Icons.dashboard),
@@ -121,9 +138,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
               icon: Icon(Icons.people),
               label: Text('Users'),
             ),
-            NavigationRailDestination(
-              icon: Icon(Icons.message),
-              label: Text('Messages'),
+         NavigationRailDestination(
+              icon: Icon(Icons.person),
+              label: Text('Admin Profile'),
             ),
             NavigationRailDestination(
               icon: Icon(Icons.add_circle),
@@ -145,7 +162,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       currentIndex: _currentIndex,
       onTap: _navigateTo,
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: Colors.deepPurple,
+      selectedItemColor: Colors.teal,
       unselectedItemColor: Colors.grey,
       items: const [
         BottomNavigationBarItem(
@@ -161,8 +178,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
           label: 'Users',
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.message),
-          label: 'Messages',
+          icon: Icon(Icons.person),
+          label: 'Admin Profile',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.add_circle),
+          label: 'Add Auction',
         ),
       ],
     );
@@ -170,7 +191,8 @@ class _AdminDashboardState extends State<AdminDashboard> {
 }
 
 class DashboardHome extends StatelessWidget {
-  const DashboardHome({super.key});
+  final int ipAddress;
+  const DashboardHome({super.key, required this.ipAddress});
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +200,9 @@ class DashboardHome extends StatelessWidget {
       children: [
         
         Expanded(
-          child: const AdminDashboard2(), 
+          child: AdminDashboard2(
+            userId: ipAddress,
+          ),
         ),
          
     
@@ -204,7 +228,7 @@ class DashboardHome extends StatelessWidget {
   Widget _buildStatItem(IconData icon, String title, String value) {
     return Column(
       children: [
-        Icon(icon, size: 40, color: Colors.deepPurple),
+        Icon(icon, size: 40, color: Colors.teal),
         const SizedBox(height: 8),
         Text(title, style: const TextStyle(fontSize: 14)),
         const SizedBox(height: 4),

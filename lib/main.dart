@@ -44,6 +44,7 @@ Future<void> main() async {
 class MazadcoLoginApp extends StatelessWidget {
   const MazadcoLoginApp({super.key});
 
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -377,7 +378,6 @@ class _LoginPageState extends State<LoginPage> {
           'account_authenticity': result['account_authenticity'] ?? 0.0,
           'bidding_score': result['bidding_score'] ?? 0.0,
           'transaction_score': result['transaction_score'] ?? 0.0,
-          'delivery_score': result['delivery_score'] ?? 0.0,
           'fraud_score': result['fraud_score'] ?? 0.0,
           'risk_level': result['risk_status'] ?? 'Unknown',
         };

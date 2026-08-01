@@ -9,6 +9,7 @@ android {
     namespace = "com.example.works"
    // compileSdk = 33  // Correct syntax for Kotlin DSL
   //  ndkVersion = flutter.ndkVersion
+
     compileSdk = 35  // Update to match awesome_notifications requirement
     ndkVersion = "27.0.12077973" // Update to match awesome_notifications requirement
     compileOptions {

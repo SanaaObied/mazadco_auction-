@@ -1,7 +1,12 @@
   import 'package:flutter/material.dart';
   import 'package:works/crud.dart';
   import 'package:works/linkapi.dart';
-  import 'package:works/item_deatailed_from_dp.dart';
+
+import 'PlaceBid.dart';
+import 'category_get.dart';
+import 'chat.dart';
+import 'landing_page.dart';
+
 
 
   class Favorite extends StatefulWidget {
@@ -40,12 +45,12 @@
       }
     }
 
-
+    int _selectedIndex = 0; // <-- Add this
     @override
     Widget build(BuildContext context) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.teal[50], // لون الخلفية العام
+          backgroundColor: Colors.teal, // لون الخلفية العام
           title: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -63,7 +68,7 @@
                     style: TextStyle(
                       fontSize: 25,
                       fontWeight: FontWeight.bold,
-                      color: Colors.green,
+                      color: Colors.white,
                     ),
                   ),
                 ),
@@ -87,15 +92,49 @@
           },
         ),
         bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: const Color(0xff003049),
+          backgroundColor: Colors.teal,
           selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.grey,
-          currentIndex: 1,
-          onTap: (index) {},
+          unselectedItemColor: Colors.white,
+          currentIndex: _selectedIndex,
+          onTap: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+
+            if (index == 0) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => ChatScreen(userId: widget.userId!,)),
+              );
+            } else if (index == 1) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => MazadcoApp(
+                    ipAddress: widget.userId,
+                  ),
+                ),
+              );
+            } else if (index == 2) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => CategoryFilterPage(userId: widget.userId)),
+              );
+            }
+          },
           items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorite'),
-            BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.chat),
+              label: 'Chat Bot',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.category),
+              label: 'Category',
+            ),
           ],
         ),
       );
@@ -112,14 +151,7 @@
         child: Column(
           children: [
             Expanded(
-              child: item["image_url"] != null && item["image_url"].toString().isNotEmpty
-                  ? Image.network(
-                item["image_url"].startsWith("http")
-                    ? item["image_url"]
-                    : "http://10.0.2.2/user_profile/${item["image_url"]}", // Replace with your actual base URL
-                fit: BoxFit.cover,
-              )
-                  : Image.asset("images/default.png", fit: BoxFit.cover),
+              child: buildImage(item['image_url']),
             ),
             const SizedBox(height: 5),
             Text(
@@ -136,7 +168,21 @@
               style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
             ),
             const SizedBox(height: 5),
-            ElevatedButton(onPressed: () {}, child: const Text("Bid Now")),
+           /* ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => AuctionItemScreen(
+                      itemId: int.parse(item["item_id"].toString()),
+                      userId: widget.userId,
+                    ),
+                  ),
+                );
+              },
+              child: const Text("Bid Now"),
+            ),*/
+
           ],
         ),
       );

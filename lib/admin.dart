@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'edit.dart';
+import 'linkapi.dart';
+import 'main.dart';
 
 class AdminAuctionsPage extends StatefulWidget {
    
@@ -21,7 +23,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
 
   Future<void> fetchAuctions() async {
     setState(() => isLoading = true);
-    final response = await http.get(Uri.parse('http://10.0.2.2/user_profile/get_auction.php'));
+    final response = await http.get(Uri.parse('${getBaseUrl()}/user_profile/get_auction.php'));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -36,12 +38,14 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
 
   Future<void> deleteAuction(String itemId) async {
     final response = await http.post(
-      Uri.parse('http://192.168.88.2/auction/delete.php'),
-      body: {'item_id': itemId},
+      Uri.parse(delete),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'item_id': itemId}),
     );
 
+
     if (response.statusCode == 200 && response.body.contains("success")) {
-      fetchAuctions();
+      fetchAuctions(); // Refresh auctions list
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -74,7 +78,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
           ),
         ),
         centerTitle: true,
-        backgroundColor: Colors.deepPurple,
+        backgroundColor: Colors.teal,
         elevation: 10,
         actions: [
           IconButton(
@@ -89,13 +93,13 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.deepPurple.shade50, Colors.blue.shade50],
+            colors: [Colors.teal.shade50, Colors.blue.shade50],
           ),
         ),
         child: isLoading
             ? Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                   strokeWidth: 5,
                 ),
               )
@@ -114,7 +118,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                           "No auctions available at the moment",
                           style: TextStyle(
                             fontSize: 20,
-                            color: Colors.deepPurple,
+                            color: Colors.teal,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -135,13 +139,13 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                         child: ExpansionTile(
                           leading: Icon(
                             Icons.category,
-                            color: Colors.deepPurple,
+                            color: Colors.teal,
                           ),
                           title: Text(
                             "Category: $category",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
+                              color: Colors.teal,
                             ),
                           ),
                           children: [
@@ -160,7 +164,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                   columnSpacing: 20,
                                   dataRowHeight: 60,
                                   headingRowColor: MaterialStateProperty.resolveWith<Color>(
-                                    (Set<MaterialState> states) => Colors.deepPurple.shade100,
+                                    (Set<MaterialState> states) => Colors.teal.shade100,
                                   ),
                                   columns: const [
                                     DataColumn(
@@ -168,7 +172,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                         "Title",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ),
@@ -177,7 +181,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                         "Price",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ),
@@ -186,7 +190,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                         "Start Time",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ),
@@ -195,7 +199,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                         "End Time",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ),
@@ -204,7 +208,7 @@ class _AdminAuctionsPageState extends State<AdminAuctionsPage> {
                                         "Actions",
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.deepPurple,
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ),

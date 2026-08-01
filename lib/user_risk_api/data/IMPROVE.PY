@@ -6,10 +6,10 @@ from sklearn.metrics import classification_report, confusion_matrix, accuracy_sc
 from imblearn.over_sampling import SMOTE
 
 # تحميل البيانات
-df = pd.read_csv("./balanced_user_behavior.csv")  # تأكد من مسار الملف
+df = pd.read_csv("./balanced_user_behavior_new.csv")  # تأكد من مسار الملف
 
-# إنشاء ميزة جديدة: متوسط النقاط
-df["avg_score"] = df[["bidding_score", "transaction_score", "delivery_score"]].mean(axis=1)
+# إنشاء ميزة جديدة: متوسط النقاط (بعد حذف delivery_score)
+df["avg_score"] = df[["bidding_score", "transaction_score"]].mean(axis=1)
 
 # إعادة تصنيف مستوى الخطر
 def redefine_risk(row):

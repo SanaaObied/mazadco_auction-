@@ -1,8 +1,16 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:works/SecurityPassword.dart';
 import 'package:works/crud.dart';
 import 'package:works/item_deatailed_from_dp.dart';
 import 'package:works/linkapi.dart';
+
+import 'Favorite.dart';
+import 'about_us.dart';
+import 'category_get.dart';
+import 'chat.dart';
 
 class UserProfile extends StatefulWidget {
   final int userId;
@@ -35,9 +43,56 @@ class _UserProfileState extends State<UserProfile> {
     Session.userId = widget.userId;
     if (!alreadyCalledRisk) {
       alreadyCalledRisk = true;
+      //fetchUserRiskLevel();
+     // evaluateRisk(widget.userId);
+      fetchUserRiskLevel();
       evaluateRisk(widget.userId);
     }    getItem(widget.userId); // Fetch user data for user_id = 1
 
+  }
+  Future<void> fetchUserRiskLevel() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$linkGetRiskLevel?user_id=${Session.userId}"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == 'success' && data.containsKey('risk_level')) {
+          final risk = data['risk_level'] ?? 'low';
+          if (!mounted) return;
+
+          setState(() {
+            riskStatus = risk.toLowerCase();
+            riskImagePath = _getImageForRisk(riskStatus);
+          });
+
+          print('Risk level set to: $riskStatus');
+        } else {
+          print("Invalid status or missing risk_level in response");
+        }
+      } else {
+        print("Server error: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Exception: $e");
+    }
+  }
+
+  String _getImageForRisk(String status) {
+    switch (status.toLowerCase()) {
+      case 'low':
+        return 'images/low.jpg';
+      case 'medium':
+        return 'images/mid.jpg';
+      case 'high':
+        return 'images/high.jpg';
+      case 'new_user':
+        return 'images/new_user.png';
+      default:
+        return '';
+    }
   }
   Future<void> getItem(int userId) async {
     print("Fetching from: $linkUserProfile");
@@ -57,10 +112,10 @@ class _UserProfileState extends State<UserProfile> {
         // Check if 'image' exists, and set the userProfileImage accordingly
         if (result.containsKey('image') && result['image'] != null && result['image'] != '') {
           // Assuming 'image' is a local path like 'images/sana.jpg'
-          userProfileImage = 'http://10.0.2.2/user_profile/${result['image']}'; // Set the image path to assets
+          userProfileImage = '${getBaseUrl()}/user_profile/${result['image']}'; // Set the image path to assets
         } else if (result.containsKey('image_url') && result['image_url'] != null && result['image_url'] != '') {
           // Handle external URL if available
-          userProfileImage = "http://10.0.2.2/user_profile/${result['image_url']}";
+          userProfileImage = "${getBaseUrl()}/user_profile/${result['image_url']}";
         } else {
           userProfileImage = ''; // Handle if no image or image_url exists
         }
@@ -72,60 +127,88 @@ class _UserProfileState extends State<UserProfile> {
       print("Error: Invalid response format or empty data");
     }
   }
-  Future<void> evaluateRisk(int userId) async {
-    print("Calling Risk Evaluator for user_id: $userId"); // <--- Add this
-    var result = await crud.getRequest("$linkRiskEvaluator?user_id=$userId");
-    print("Risk API response************: $result");
-print("user id issssssss $userId");
-    if (result == null) {
-      print("Risk API result is NULL");
-    } else if (result is! Map || result.isEmpty) {
-      print("Risk API result is not a valid map or is empty: $result");
+  Future<void> updateAccount() async {
+    final url = Uri.parse("${getBaseUrl()}/user_profile/update_user.php");
+
+    final response = await http.post(
+      url,
+      body: {
+        'user_id': widget.userId.toString(),       // ← convert to String
+        'email': email.text,
+        'mobile_number': mobileNumber.text,
+        'username': username.text,
+      },
+    );
+
+    final Map<String, dynamic> responseData = json.decode(response.body);
+
+    if (responseData['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Account updated successfully!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed: ${responseData['message']}')),
+      );
     }
-    if (result != null && result is Map && result.isNotEmpty) {
+  }
+
+
+  Future<void> evaluateRisk(int userId) async {
+    print("Calling Risk Evaluator for user_id: $userId");
+
+    var result = await crud.getRequest("$linkRiskEvaluator?user_id=$userId");
+
+    print("🔍 Full Risk API result: $result");
+
+    if (result == null) {
+      print("❌ Risk API result is NULL");
+      setState(() {
+        riskStatus = "Unknown";
+        riskImagePath = "";
+        riskData = {};
+      });
+      return;
+    }
+
+    if (result != null && result is Map && result['risk_status'] != null) {
       setState(() {
         riskStatus = result['risk_status'] ?? 'Unknown';
         riskData = {
           'account_authenticity': result['account_authenticity'] ?? 0.0,
           'bidding_score': result['bidding_score'] ?? 0.0,
           'transaction_score': result['transaction_score'] ?? 0.0,
-          'delivery_score': result['delivery_score'] ?? 0.0,
           'fraud_score': result['fraud_score'] ?? 0.0,
           'risk_level': result['risk_status'] ?? 'Unknown',
         };
         riskImagePath = _getImageForRisk(riskStatus);
       });
+    } else {
+      print("❌ Error: Unexpected API format: $result");
+      setState(() {
+        riskStatus = "Unknown";
+        riskImagePath = "";
+        riskData = {};
+      });
     }
   }
 
-  String _getImageForRisk(String status) {
-    switch (status.toLowerCase()) {
-      case 'low':
-        return 'images/low.jpg';
-      case 'medium':
-        return 'images/mid.jpg';
-      case 'high':
-        return 'images/high.jpg';
-      case 'new user':
-        return 'images/new_user.png';
-      default:
-        return '';
-    }
-  }
 
   OutlineInputBorder myInputBorder() {
     return const OutlineInputBorder(
       borderRadius: BorderRadius.all(Radius.circular(20)),
-      borderSide: BorderSide(color: Color(0xffd62828), width: 3),
+      borderSide: BorderSide(color: Colors.white, width: 3), // was red, now white
     );
   }
 
   OutlineInputBorder myFocusBorder() {
     return const OutlineInputBorder(
       borderRadius: BorderRadius.all(Radius.circular(20)),
-      borderSide: BorderSide(color: Color(0xfffcbf49), width: 3),
+      borderSide: BorderSide(color: Colors.teal, width: 3), // was yellow, now teal
     );
   }
+
+  int _selectedIndex = 0;  // Initialize to 0 or whichever index you want as default
 
   @override
   Widget build(BuildContext context) {
@@ -134,9 +217,9 @@ print("user id issssssss $userId");
       body: Column(
         children: [
           // Header
-          Container(
-            color: const Color(0xff003049),
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+           Container(
+            color: Colors.teal, // ← use Colors.teal directly
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -152,11 +235,11 @@ print("user id issssssss $userId");
                       ),
                     ),
                     const SizedBox(width: 8),
-                    ClipOval(
+                  /*  ClipOval(
                       child:
                           userProfileImage != null &&
                                   userProfileImage!.isNotEmpty
-                              ? (userProfileImage!.startsWith("http://10.0.2.2:8000/user_profile/")
+                              ? (userProfileImage!.startsWith("${getBaseUrl()}/user_profile/")
                                   ? Image.network(
                                     userProfileImage!,
                                     width: 40,
@@ -175,7 +258,7 @@ print("user id issssssss $userId");
                                 height: 40,
                                 fit: BoxFit.cover,
                               ),
-                    ),
+                    ),*/
                   ],
                 ),
 
@@ -411,35 +494,7 @@ print("user id issssssss $userId");
                                               8,
                                             ),
                                           ),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const Text(
-                                                'Delivery Score',
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xff003049),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 5),
-                                              const Text(
-                                                'A score based on the user’s delivery performance and reliability.',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
-                                              Text(
-                                                'Score: ${riskData['delivery_score']}',
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.black,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+
                                         ),
 
                                         // Fraud Score
@@ -529,17 +584,18 @@ print("user id issssssss $userId");
           Expanded(
             child: SingleChildScrollView(
               child: Container(
-                padding: const EdgeInsets.only(top: 10.0),
+                padding: const EdgeInsets.only(top: 50.0),
                 child: Container(
                   margin: const EdgeInsets.only(top: 30.0),
                   width: MediaQuery.of(context).size.width,
-                  decoration: BoxDecoration(
-                    color: const Color(0xffeae2b7),
-                    borderRadius: const BorderRadius.only(
+                  decoration: const BoxDecoration(
+                    color: Colors.teal,
+                    borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(40),
                       topRight: Radius.circular(40),
                     ),
                   ),
+                  padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
                   child: Column(
                     children: <Widget>[
                       Container(
@@ -551,20 +607,23 @@ print("user id issssssss $userId");
                           children: <Widget>[
                             TextField(
                               controller: username,
+                              style: const TextStyle(color: Colors.white),               // input text color
                               decoration: InputDecoration(
                                 labelText: 'UserName',
-                                prefixIcon: Icon(Icons.people),
-                                border: myInputBorder(),
-                                enabledBorder: myInputBorder(),
-                                focusedBorder: myFocusBorder(),
+                                labelStyle: const TextStyle(color: Colors.white),         // label color
+                                prefixIcon: const Icon(Icons.people, color: Colors.white),// icon color
+                                enabledBorder: myInputBorder(),                           // your white border
+                                focusedBorder: myFocusBorder(),                           // your teal border
                               ),
                             ),
                             const SizedBox(height: 30.0),
                             TextField(
                               controller: email,
+                              style: const TextStyle(color: Colors.white),               // input text color
                               decoration: InputDecoration(
                                 labelText: 'Email',
-                                prefixIcon: Icon(Icons.email),
+                                labelStyle: const TextStyle(color: Colors.white),
+                                prefixIcon: Icon(Icons.email, color: Colors.white),
                                 border: myInputBorder(),
                                 enabledBorder: myInputBorder(),
                                 focusedBorder: myFocusBorder(),
@@ -573,9 +632,11 @@ print("user id issssssss $userId");
                             const SizedBox(height: 30.0),
                             TextField(
                               controller: mobileNumber,
+                              style: const TextStyle(color: Colors.white),               // input text color
                               decoration: InputDecoration(
                                 labelText: 'Mobile Number',
-                                prefixIcon: Icon(Icons.phone),
+                                labelStyle: const TextStyle(color: Colors.white),
+                                prefixIcon: Icon(Icons.phone, color: Colors.white),
                                 border: myInputBorder(),
                                 enabledBorder: myInputBorder(),
                                 focusedBorder: myFocusBorder(),
@@ -626,38 +687,43 @@ print("user id issssssss $userId");
                             const SizedBox(height: 20.0),
                             Column(
                               mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
+                              children: [//AboutUsPage
                                 ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(builder: (context) => const AboutUsPage()),
+                                    );
+                                  },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xffd62828),
+                                    backgroundColor: Colors.white,
+                                    foregroundColor: Colors.teal,
                                     padding: const EdgeInsets.all(20.0),
                                     textStyle: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                  child: const Text(
-                                    'About App',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
+                                  child: const Text('About App'),
                                 ),
+
                                 const SizedBox(height: 20),
                                 ElevatedButton(
-                                  onPressed: () {},
+                                  onPressed: updateAccount, // no need for an anonymous closure
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xffd62828),
-                                    padding: const EdgeInsets.all(20.0),
+                                    backgroundColor: Colors.white,        // was red
+                                    foregroundColor: Colors.teal,                                      padding: const EdgeInsets.all(20.0),
                                     textStyle: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
                                   child: const Text(
-                                    'My Products',
-                                    style: TextStyle(color: Colors.white),
+                                    'Update My Account',
                                   ),
                                 ),
+
+
                                 const SizedBox(height: 20),
                                 ElevatedButton(
                                   onPressed: () {
@@ -671,8 +737,8 @@ print("user id issssssss $userId");
                                     );
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xffd62828),
-                                    padding: const EdgeInsets.all(20.0),
+                                    backgroundColor: Colors.white,        // was red
+                                    foregroundColor: Colors.teal,                                      padding: const EdgeInsets.all(20.0),
                                     textStyle: const TextStyle(
                                       fontSize: 20,
                                       fontWeight: FontWeight.bold,
@@ -680,7 +746,6 @@ print("user id issssssss $userId");
                                   ),
                                   child: const Text(
                                     'Change Password',
-                                    style: TextStyle(color: Colors.white),
                                   ),
                                 ),
                               ],
@@ -697,18 +762,53 @@ print("user id issssssss $userId");
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: const Color(0xff003049),
+        backgroundColor: Colors.teal,
         selectedItemColor: Colors.white,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Colors.white,
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+
+          // الانتقال إلى الصفحة المناسبة
+          if (index == 0) {
+            Navigator.push(
+              context,
+                MaterialPageRoute(builder: (_) => ChatScreen(userId: widget.userId,))            );
+          } else if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => Favorite(
+                  userId:
+                  Session
+                      .userId!, // تمرير الـ ipAddress الذي تم تمريره لـ HomePage
+                ),
+              ),
+            );
+          } else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CategoryFilterPage(userId:widget.userId)),
+            );
+          }
+        },
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat),
+            label: 'Chat Bot',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
             label: 'Favorite',
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.chat), label: 'Chat'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.category),
+            label: 'Category',
+          ),
         ],
       ),
     );
-  }
-}
+  }}

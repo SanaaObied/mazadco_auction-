@@ -149,9 +149,10 @@ class _SecuritypasswordState extends State<Securitypassword> {
     return Scaffold(
       backgroundColor: const Color(0xFFE0E0E0),
       appBar: AppBar(
-        backgroundColor: const Color(0xff003049),
+        backgroundColor: Colors.teal, // ← here
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             ClipOval(
               child: Image.asset(
@@ -172,10 +173,16 @@ class _SecuritypasswordState extends State<Securitypassword> {
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
+        padding: const EdgeInsets.fromLTRB(
+          40.0, // left
+          70.0, // top = 50 + 20
+          40.0, // right
+          20.0, // bottom
+        ),
         child: Form(
           key: _formKey,
           child: Column(
+
             children: [
               // Current Password Field (read-only)
               TextFormField(
@@ -233,7 +240,8 @@ class _SecuritypasswordState extends State<Securitypassword> {
 
               ElevatedButton(
                 onPressed: updatePassword,
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xffd62828),
+                style: ElevatedButton.styleFrom(    backgroundColor: Colors.teal, // ← here
+
                   padding: const EdgeInsets.all(20.0),
                   textStyle: const TextStyle(
                     fontSize: 20,

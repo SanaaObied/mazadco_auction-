@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:works/Favorite.dart';
-import 'package:works/contactus.dart';
 import 'package:works/linkapi.dart';
 
 import 'package:works/search2.dart';
@@ -11,6 +10,7 @@ import 'package:works/user_profile.dart';
 import 'UserItemsScreen.dart';
 import 'addAuction.dart';
 import 'category_get.dart';
+import 'chat.dart';
 import 'item_deatailed_from_dp.dart';
 import 'main.dart';
 
@@ -234,7 +234,7 @@ class _HomePageState extends State<HomePage> {
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.menu, color: Colors.white),
+          icon: Icon(Icons.person, color: Colors.white),
 
           onPressed: () {
             if (Session.userId == null || Session.userId == 0) {
@@ -270,11 +270,11 @@ class _HomePageState extends State<HomePage> {
           ),
 
           IconButton(
-            icon: Icon(Icons.login, color: Colors.white),
+            icon: Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              Navigator.push(
+              Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (context) => CategoryFilterPage(userId: widget.ipAddress)),
+                MaterialPageRoute(builder: (_) => LoginPage()),
               );
             },
           ),
@@ -289,30 +289,6 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
 
-            const SizedBox(height: 20),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children:
-                categories
-                    .map(
-                      (category) => Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8.0,
-                    ),
-                    child: CategoryItem(
-                      category: category,
-                      onCategorySelected: (selected) {
-                        setState(() {
-                          selectedCategory = selected;
-                        });
-                      },
-                    ),
-                  ),
-                )
-                    .toList(),
-              ),
-            ),
             AuctionGrid(auctionItems: getFilteredItems()),
             Padding(
               padding: const EdgeInsets.all(16.0),
@@ -335,24 +311,46 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      floatingActionButton:
-      Session.userId != 0
-          ? FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) =>
-                  UserParticipationPage(userId: Session.userId!),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min, // so it takes only as much space as needed
+        children: [
+          if (Session.userId != 0)
+            FloatingActionButton(
+              heroTag: 'cartBtn', // unique heroTag
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserParticipationPage(userId: Session.userId!),
+                  ),
+                );
+              },
+              child: Icon(Icons.add_shopping_cart),
+              backgroundColor: Colors.teal,
+              tooltip: 'My Participated Items',
             ),
-          );
-        },
-        child: Icon(Icons.add_shopping_cart),
-        backgroundColor: Colors.teal,
-        tooltip: 'My Participated Items',
-      )
-          : null,
+
+          const SizedBox(height: 16),
+
+          if (Session.userId != 0 && (riskLevel == 'low' || riskLevel == 'medium'))
+            FloatingActionButton(
+              heroTag: 'chatBtn', // unique heroTag
+              backgroundColor: Colors.teal,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => NewProductScreen()),
+                );
+              },
+              child: const Icon(Icons.add),
+              tooltip: 'Chat',
+            ),
+
+
+        ],
+
+      ),
+
 
       bottomNavigationBar: BottomNavigationBar(
       backgroundColor: Colors.teal,
@@ -376,7 +374,7 @@ class _HomePageState extends State<HomePage> {
           if (index == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => ContactUsPage()),
+              MaterialPageRoute(builder: (_) => ChatScreen(userId: Session.userId!,)),
             );
           } else if (index == 1) {
             Navigator.push(
@@ -394,13 +392,18 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => CategoryFilterPage(userId: widget.ipAddress)),
-            );
+            );//ChatScreen()
+          }else if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CategoryFilterPage(userId: widget.ipAddress)),
+            );//ChatScreen()
           }
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.help_outline),
-            label: 'Contact Us',
+            icon: Icon(Icons.chat),
+            label: 'Chat Bot',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
@@ -498,7 +501,7 @@ class AuctionCard extends StatelessWidget {
 
         print('🔹 itemId: ${item.itemId}');
         print('🔹 userId: ${Session.userId}');
-        print('🔹 Max allowed bid: €${maxBid.toStringAsFixed(2)}');
+        print('🔹 Max allowed bid: \$${maxBid.toStringAsFixed(2)}');
 
         Navigator.push(
           context,
@@ -539,9 +542,10 @@ class AuctionCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Text(
-                '€${item.price}',
+                '\$${item.price}',
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
+
             ),
           ],
         ),

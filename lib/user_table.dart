@@ -29,7 +29,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       final response = await http.get(
         Uri.parse('${getData}?user_id=${widget.userId}'),
       );
-
       if (response.statusCode == 200) {
         setState(() {
           userData = json.decode(response.body);
@@ -98,7 +97,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {bool isStatus = false}) {
+  Widget _buildInfoRow(String label, dynamic value, {bool isStatus = false}) {
+    final displayValue = value?.toString() ?? 'N/A';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -114,9 +115,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              value,
+              displayValue,
               style: TextStyle(
-                color: isStatus ? _getStatusColor(value) : null,
+                color: isStatus ? _getStatusColor(displayValue) : null,
                 fontWeight: isStatus ? FontWeight.bold : null,
               ),
             ),
